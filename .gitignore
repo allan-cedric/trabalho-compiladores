@@ -1,0 +1,7 @@
+*.pas
+MEPA
+*.output
+*.o
+compilador
+lex.yy.c
+compilador.tab.*
