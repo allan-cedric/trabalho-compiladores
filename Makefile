@@ -9,8 +9,8 @@
 
 $DEPURA=1
 
-compilador: lex.yy.c compilador.tab.c compilador.o compilador.h
-	gcc lex.yy.c compilador.tab.c compilador.o -o compilador -ll -ly -lc
+compilador: lex.yy.c compilador.tab.c compilador.o tab_simb.o compilador.h
+	gcc lex.yy.c compilador.tab.c compilador.o tab_simb.o -o compilador -ll -ly -lc
 
 lex.yy.c: compilador.l compilador.h
 	flex compilador.l
@@ -21,5 +21,8 @@ compilador.tab.c: compilador.y compilador.h
 compilador.o : compilador.h compiladorF.c
 	gcc -c compiladorF.c -o compilador.o
 
+tab_simb.o : compilador.h tab_simb.c
+	gcc -c tab_simb.c -o tab_simb.o
+
 clean :
-	rm -f compilador.tab.* lex.yy.c compilador.o compilador compilador.output MEPA
+	rm -f compilador.tab.* lex.yy.c compilador.o tab_simb.o compilador compilador.output MEPA
