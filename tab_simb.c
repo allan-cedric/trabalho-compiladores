@@ -34,9 +34,9 @@ int busca_simb(tab_simb_t *ts, const unsigned char *id) {
     return -1;
 }
 
-void retira(tab_simb_t *ts, int n) {
+void retira_simb(tab_simb_t *ts, int n) {
 
-    while(ts->topo >= 0) {
+    while(ts->topo >= 0 && n > 0) {
         if(ts->tabela[ts->topo]->categoria == procedimento) {
             procedimento_t *atrib = ts->tabela[ts->topo]->atrib_vars;
             free(atrib->params);
@@ -47,5 +47,6 @@ void retira(tab_simb_t *ts, int n) {
         free(ts->tabela[ts->topo]);
         ts->tabela[ts->topo] = NULL;
         ts->topo--;
+        n--;
     }
 }

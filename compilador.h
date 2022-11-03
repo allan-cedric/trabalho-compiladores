@@ -100,4 +100,4 @@ void yyerror(const char *s);
 void inicializa_tab_simb(tab_simb_t *ts);
 void insere_simb(tab_simb_t *ts, const unsigned char *id, categoria_t cat, int nivel_lexico, void *atrib_vars);
 int busca_simb(tab_simb_t *ts, const unsigned char *id);
-void retira(tab_simb_t *ts, int n);
+void retira_simb(tab_simb_t *ts, int n);
