@@ -10,8 +10,6 @@
 #include <string.h>
 #include "compilador.h"
 
-int num_vars;
-
 %}
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES
@@ -20,6 +18,7 @@ int num_vars;
 
 %token ROTULO TIPO VETOR DE PROCEDIMENTO FUNCAO
 %token PULAR SE ENTAO SENAO ENQUANTO FACA
+%token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR_IGUAL MAIOR
 %token ADICAO SUBTRACAO MULTIPLICACAO DIVISAO
 %token NAO E OU ABRE_COLCHETES FECHA_COLCHETES
 %token NUMERO
@@ -27,12 +26,12 @@ int num_vars;
 %%
 
 programa    :{
-             geraCodigo (NULL, "INPP");
+               geraCodigo (NULL, "INPP");
              }
-             PROGRAM IDENT
-             ABRE_PARENTESES lista_idents FECHA_PARENTESES PONTO_E_VIRGULA
-             bloco PONTO {
-             geraCodigo (NULL, "PARA");
+             PROGRAM IDENT ABRE_PARENTESES lista_idents FECHA_PARENTESES PONTO_E_VIRGULA
+             bloco PONTO 
+             {
+               geraCodigo (NULL, "PARA");
              }
 ;
 
@@ -107,6 +106,7 @@ int main (int argc, char** argv) {
 /* -------------------------------------------------------------------
  *  Inicia a Tabela de S�mbolos
  * ------------------------------------------------------------------- */
+   inicializa(&ts);
 
    yyin=fp;
    yyparse();

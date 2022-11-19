@@ -21,11 +21,12 @@ typedef enum simbolos {
 
   simb_rotulo, simb_tipo, simb_vetor, simb_de, simb_procedimento,
   simb_funcao, simb_pular, simb_se, simb_entao, simb_senao,
-  simb_enquanto, simb_faca, simb_adicao, simb_subtracao, simb_multiplicacao,
+  simb_enquanto, simb_faca, simb_igual, simb_diferente, simb_menor, simb_menor_igual, 
+  simb_maior_igual, simb_maior, simb_adicao, simb_subtracao, simb_multiplicacao,
   simb_divisao, simb_nao, simb_e, simb_ou, simb_abre_colchetes, simb_fecha_colchetes
 } simbolos;
 
-#define TAM_ID 1024
+#define TAM_ID 1025
 #define TAM_TAB_SIMB 4096
 
 typedef enum categoria_t {
@@ -69,7 +70,7 @@ typedef struct simb_t {
 
 typedef struct tab_simb_t {
   int topo;
-  simb_t *tabela[TAM_TAB_SIMB];
+  simb_t tabela[TAM_TAB_SIMB];
 } tab_simb_t;
 
 
@@ -83,6 +84,8 @@ extern char token[TAM_TOKEN];
 extern int nivel_lexico;
 extern int desloc;
 extern int nl;
+extern tab_simb_t ts;
+extern int num_vars;
 
 
 /* -------------------------------------------------------------------
@@ -97,7 +100,7 @@ void yyerror(const char *s);
  * prototipos globais p/ manipular a tabela de simbolos
  * ------------------------------------------------------------------- */
 
-void inicializa_tab_simb(tab_simb_t *ts);
-void insere_simb(tab_simb_t *ts, const unsigned char *id, categoria_t cat, int nivel_lexico, void *atrib_vars);
-int busca_simb(tab_simb_t *ts, const unsigned char *id);
-void retira_simb(tab_simb_t *ts, int n);
+void inicializa(tab_simb_t *ts);
+void insere(tab_simb_t *ts, simb_t *simb);
+int busca(tab_simb_t *ts, const unsigned char *id);
+void retira(tab_simb_t *ts, int n);

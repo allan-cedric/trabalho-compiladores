@@ -26,6 +26,8 @@
 
 int nl = 1;
 
+void trata_token(simbolos simb, const char *str);
+
 %}
 
 pulo_linha [\n]
@@ -44,245 +46,214 @@ comentario "(*".*"*)"
 
 {descarte}
 
-{numero} { 
-  simbolo = simb_numero;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" numero  ");
+{comentario}
+
+{numero} {
+  trata_token(simb_numero, " numero ");
   return NUMERO;
 }
 
-{comentario}
-
-program { 
-  simbolo  = simb_program;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME("program ");
+program {
+  trata_token(simb_program, " program ");
   return PROGRAM;
 }
 
-var { 
-  simbolo = simb_var;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME("var  ");
+var {
+  trata_token(simb_var, " var ");
   return VAR;
 }
 
-begin { 
-  simbolo = simb_begin;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME("begin ");
+begin {
+  trata_token(simb_begin, " begin ");
   return T_BEGIN;
 }
 
-end { 
-  simbolo = simb_end;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME("end  ");
+end {
+  trata_token(simb_end, " end ");
   return T_END;
 }
 
-:= { 
-  simbolo = simb_atribuicao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" atribuicao  ");
+:= {
+  trata_token(simb_atribuicao, " atribuicao ");
   return ATRIBUICAO;
 }
 
-\; { 
-  simbolo = simb_ponto_e_virgula;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" pt_virgula  ");
+\; {
+  trata_token(simb_ponto_e_virgula, " pt_virgula ");
   return PONTO_E_VIRGULA;
 }
 
-\: { 
-  simbolo = simb_dois_pontos;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" dois pontos ");
+\: {
+  trata_token(simb_dois_pontos, " dois pontos ");
   return DOIS_PONTOS;
 }
 
-\, { 
-  simbolo = simb_virgula;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" virgula  ");
+\, {
+  trata_token(simb_virgula, " virgula ");
   return VIRGULA;
 }
 
 
-\. { 
-  simbolo = simb_ponto;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" ponto  ");
+\. {
+  trata_token(simb_ponto, " ponto ");
   return PONTO;
 }
 
-\( { 
-  simbolo = simb_abre_parenteses;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" abre_parenteses  ");
+\( {
+  trata_token(simb_abre_parenteses, " abre_parenteses ");
   return ABRE_PARENTESES;
 }
 
-\) { 
-  simbolo = simb_fecha_parenteses;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" fecha_parenteses ");
+\) {
+  trata_token(simb_fecha_parenteses, " fecha_parenteses ");
   return FECHA_PARENTESES;
 }
 
-label { 
-  simbolo = simb_rotulo;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" rotulo ");
+label {
+  trata_token(simb_rotulo, " rotulo ");
   return ROTULO;
 }
 
-type { 
-  simbolo = simb_tipo;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" tipo ");
+type {
+  trata_token(simb_tipo, " tipo ");
   return TIPO;
 }
 
-array { 
-  simbolo = simb_vetor;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" vetor ");
+array {
+  trata_token(simb_vetor, " vetor ");
   return VETOR;
 }
 
-of { 
-  simbolo = simb_de;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" de ");
+of {
+  trata_token(simb_de, " de ");
   return DE;
 }
 
-procedure { 
-  simbolo = simb_procedimento;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" procedimento ");
+procedure {
+  trata_token(simb_procedimento, " procedimento ");
   return PROCEDIMENTO;
 }
 
-function { 
-  simbolo = simb_funcao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" funcao ");
+function {
+  trata_token(simb_funcao, " funcao ");
   return FUNCAO;
 }
 
-goto { 
-  simbolo = simb_pular;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" pular ");
+goto {
+  trata_token(simb_pular, " pular ");
   return PULAR;
 }
 
-if { 
-  simbolo = simb_se;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" se ");
+if {
+  trata_token(simb_se, " se ");
   return SE;
 }
 
-then { 
-  simbolo = simb_entao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" entao ");
+then {
+  trata_token(simb_entao, " entao ");
   return ENTAO;
 }
 
-else { 
-  simbolo = simb_senao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" senao ");
+else {
+  trata_token(simb_senao, " senao ");
   return SENAO;
 }
 
-while { 
-  simbolo = simb_enquanto;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" enquanto ");
+while {
+  trata_token(simb_enquanto, " enquanto ");
   return ENQUANTO;
 }
 
-do { 
-  simbolo = simb_faca;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" faca ");
+do {
+  trata_token(simb_faca, " faca ");
   return FACA;
 }
 
-\+ { 
-  simbolo = simb_adicao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" adicao ");
+\= {
+  trata_token(simb_igual, " igual ");
+  return IGUAL;
+}
+
+\<\> {
+  trata_token(simb_diferente, " diferente ");
+  return DIFERENTE;
+}
+
+\< {
+  trata_token(simb_menor, " menor ");
+  return MENOR;
+}
+
+\<\= {
+  trata_token(simb_menor_igual, " menor igual ");
+  return MENOR_IGUAL;
+}
+
+\>\= {
+  trata_token(simb_maior_igual, " maior igual ");
+  return MAIOR_IGUAL;
+}
+
+\> {
+  trata_token(simb_maior, " maior ");
+  return MAIOR;
+}
+
+\+ {
+  trata_token(simb_adicao, " adicao ");
   return ADICAO;
 }
 
-\- { 
-  simbolo = simb_subtracao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" subtracao ");
+\- {
+  trata_token(simb_subtracao, " subtracao ");
   return SUBTRACAO;
 }
 
-\* { 
-  simbolo = simb_multiplicacao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" multiplicacao ");
+\* {
+  trata_token(simb_multiplicacao, " multiplicacao ");
   return MULTIPLICACAO;
 }
 
-div { 
-  simbolo = simb_divisao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" divisao ");
+div {
+  trata_token(simb_divisao, " divisao ");
   return DIVISAO;
 }
 
-not { 
-  simbolo = simb_nao;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" nao ");
+not {
+  trata_token(simb_nao, " nao ");
   return NAO;
 }
 
-and { 
-  simbolo = simb_e;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" e ");
+and {
+  trata_token(simb_e, " e ");
   return E;
 }
 
-or { 
-  simbolo = simb_ou;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" ou ");
+or {
+  trata_token(simb_ou, " ou ");
   return OU;
 }
 
-\[ { 
-  simbolo = simb_abre_colchetes;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" abre_colchetes ");
+\[ {
+  trata_token(simb_abre_colchetes, " abre_colchetes ");
   return ABRE_COLCHETES;
 }
 
-\] { 
-  simbolo = simb_fecha_colchetes;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" fecha_colchetes ");
+\] {
+  trata_token(simb_fecha_colchetes, " fecha_colchetes ");
   return FECHA_COLCHETES;
 }
 
-{ident} { 
-  simbolo = simb_identificador;
-  strncpy (token, yytext, TAM_TOKEN);
-  IMPRIME(" ident  ");
+{ident} {
+  trata_token(simb_identificador, " ident ");
   return IDENT;
 }
 
 %%
+
+void trata_token(simbolos simb, const char *str) {
+
+  simbolo = simb;
+  strncpy (token, yytext, TAM_TOKEN);
+  IMPRIME(str);
+}
