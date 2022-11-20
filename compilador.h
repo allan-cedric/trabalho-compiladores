@@ -90,6 +90,7 @@ extern int nl;
 extern tab_simb_t ts;
 extern int num_vars, num_vars_por_tipo;
 extern tipo_t tipo_corrente;
+extern int l_elem;
 
 
 /* -------------------------------------------------------------------
@@ -99,6 +100,7 @@ extern tipo_t tipo_corrente;
 void geraCodigo (char*, char*);
 int yylex();
 void yyerror(const char *s);
+int imprimeErro (char* erro);
 
 /* -------------------------------------------------------------------
  * prototipos globais p/ manipular a tabela de simbolos

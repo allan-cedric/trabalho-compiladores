@@ -8,6 +8,7 @@ int desloc;
 int num_vars, num_vars_por_tipo;
 tab_simb_t ts;
 tipo_t tipo_corrente;
+int l_elem;
 
 void inicializa(tab_simb_t *ts) {
 

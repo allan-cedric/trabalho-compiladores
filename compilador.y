@@ -55,6 +55,7 @@ parte_declara_vars:  {
                         sprintf(amem_k, "AMEM %i", num_vars);
                         geraCodigo(NULL, amem_k);
 
+                        printf("alocado\n");
                         imprime(&ts);
                      }
                      | 
@@ -143,8 +144,72 @@ lista_idents:  lista_idents VIRGULA IDENT
 ;
 
 comando_composto: T_BEGIN comandos T_END
+                  {
+                     int i = ts.topo;
+                     int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
+                     int conta_vars = 0;
+                     while(i >= 0 && 
+                           ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
+                           conta_vars++;
+                           i--;
+                     }
+                     retira(&ts, conta_vars);
 
-comandos:
+                     char dmem[TAM_ID];
+                     sprintf(dmem, "DMEM %i", conta_vars);
+                     geraCodigo(NULL, dmem);
+
+                     printf("desalocado\n");
+                     imprime(&ts);
+                  }
+                  |
+                  T_BEGIN T_END
+;
+
+comandos:   comandos comando
+            |
+            comando
+;
+
+comando: comando_sem_rotulo
+;
+
+comando_sem_rotulo:  atribuicao
+;
+
+atribuicao: variavel ATRIBUICAO expressao
+            {
+               simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+               if(atrib->tipo == tipo_corrente) {
+                  char armz[TAM_ID];
+                  sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+                  geraCodigo(NULL, armz);
+               }else
+                  imprimeErro("tipos incompativeis");
+            }
+            PONTO_E_VIRGULA
+;
+
+variavel:   IDENT
+            {
+               l_elem = busca(&ts, token);
+
+               if(l_elem == -1)
+                  imprimeErro("variavel nao declarada");
+               
+               if(ts.tabela[l_elem].categoria != simples)
+                  imprimeErro("variavel nao eh simples");
+            }
+;
+
+expressao:  NUMERO
+            {
+               tipo_corrente = inteiro;
+
+               char crct[TAM_ID];
+               sprintf(crct, "CRCT %s", token);
+               geraCodigo(NULL, crct);
+            }
 ;
 
 %%
