@@ -5,3 +5,4 @@ MEPA
 compilador
 lex.yy.c
 compilador.tab.*
+.vscode/

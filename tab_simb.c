@@ -5,8 +5,9 @@
 
 int nivel_lexico;
 int desloc;
-int num_vars;
+int num_vars, num_vars_por_tipo;
 tab_simb_t ts;
+tipo_t tipo_corrente;
 
 void inicializa(tab_simb_t *ts) {
 
@@ -45,5 +46,16 @@ void retira(tab_simb_t *ts, int n) {
         ts->tabela[ts->topo].atrib_vars = NULL;
         ts->topo--;
         n--;
+    }
+}
+
+void imprime(tab_simb_t *ts) {
+
+    for(int i = 0; i <= ts->topo; i++) {
+        printf("id: %s | cat: %i | nivel_l: %i | ", 
+        ts->tabela[i].id, (int)ts->tabela[i].categoria, ts->tabela[i].nivel_lexico);
+
+        simples_t *atrib = ts->tabela[i].atrib_vars;
+        printf("tipo: %i | desloc: %i\n", atrib->tipo, atrib->deslocamento);
     }
 }

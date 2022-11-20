@@ -23,7 +23,9 @@ typedef enum simbolos {
   simb_funcao, simb_pular, simb_se, simb_entao, simb_senao,
   simb_enquanto, simb_faca, simb_igual, simb_diferente, simb_menor, simb_menor_igual, 
   simb_maior_igual, simb_maior, simb_adicao, simb_subtracao, simb_multiplicacao,
-  simb_divisao, simb_nao, simb_e, simb_ou, simb_abre_colchetes, simb_fecha_colchetes
+  simb_divisao, simb_nao, simb_e, simb_ou, simb_abre_colchetes, simb_fecha_colchetes,
+
+  simb_inteiro, simb_booleano
 } simbolos;
 
 #define TAM_ID 1025
@@ -36,7 +38,8 @@ typedef enum categoria_t {
 } categoria_t;
 
 typedef enum tipo_t {
-  inteiro
+  inteiro,
+  booleano
 } tipo_t;
 
 typedef enum passagem_t {
@@ -85,7 +88,8 @@ extern int nivel_lexico;
 extern int desloc;
 extern int nl;
 extern tab_simb_t ts;
-extern int num_vars;
+extern int num_vars, num_vars_por_tipo;
+extern tipo_t tipo_corrente;
 
 
 /* -------------------------------------------------------------------
@@ -104,3 +108,4 @@ void inicializa(tab_simb_t *ts);
 void insere(tab_simb_t *ts, simb_t *simb);
 int busca(tab_simb_t *ts, const unsigned char *id);
 void retira(tab_simb_t *ts, int n);
+void imprime(tab_simb_t *ts);

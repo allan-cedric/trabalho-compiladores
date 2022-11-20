@@ -21,8 +21,8 @@
 #include "compilador.h"
 #include "compilador.tab.h"
 
-//#define IMPRIME(STR) {};
-#define IMPRIME(STR) printf("%s    # %s \n", STR, token);
+#define IMPRIME(STR) {};
+//#define IMPRIME(STR) printf("%s    # %s \n", STR, token);
 
 int nl = 1;
 
@@ -242,6 +242,16 @@ or {
 \] {
   trata_token(simb_fecha_colchetes, " fecha_colchetes ");
   return FECHA_COLCHETES;
+}
+
+integer {
+  trata_token(simb_inteiro, " inteiro ");
+  return INTEIRO;
+}
+
+boolean {
+  trata_token(simb_booleano, " booleano ");
+  return BOOLEANO;
 }
 
 {ident} {
