@@ -200,23 +200,23 @@ do {
 }
 
 \+ {
-  trata_token(simb_adicao, " adicao ");
-  return ADICAO;
+  trata_token(simb_mais, " mais ");
+  return MAIS;
 }
 
 \- {
-  trata_token(simb_subtracao, " subtracao ");
-  return SUBTRACAO;
+  trata_token(simb_menos, " menos ");
+  return MENOS;
 }
 
 \* {
-  trata_token(simb_multiplicacao, " multiplicacao ");
-  return MULTIPLICACAO;
+  trata_token(simb_vezes, " vezes ");
+  return VEZES;
 }
 
 div {
-  trata_token(simb_divisao, " divisao ");
-  return DIVISAO;
+  trata_token(simb_dividido, " dividido ");
+  return DIVIDIDO;
 }
 
 not {

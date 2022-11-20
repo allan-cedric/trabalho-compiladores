@@ -10,6 +10,10 @@
 #include <string.h>
 #include "compilador.h"
 
+pilha_t pil_tipo;
+
+void verifica_tipo(tipo_t *t, int num_op);
+
 %}
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES
@@ -19,7 +23,7 @@
 %token ROTULO TIPO VETOR DE PROCEDIMENTO FUNCAO
 %token PULAR SE ENTAO SENAO ENQUANTO FACA
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR_IGUAL MAIOR
-%token ADICAO SUBTRACAO MULTIPLICACAO DIVISAO
+%token MAIS MENOS VEZES DIVIDIDO
 %token NAO E OU ABRE_COLCHETES FECHA_COLCHETES
 %token NUMERO
 
@@ -43,7 +47,7 @@ bloco       :
                }
 
                comando_composto
-               ;
+;
 
 parte_declara_vars:  {
                         nivel_lexico++;
@@ -56,12 +60,11 @@ parte_declara_vars:  {
                         geraCodigo(NULL, amem_k);
 
                         printf("alocado\n");
-                        imprime(&ts);
-                     }
-                     | 
+                        imprime_ts(&ts);
+                     } |
+; 
 
-declara_vars:  declara_vars declara_var
-               | 
+declara_vars:  declara_vars declara_var | 
                declara_var
 ;
 
@@ -85,8 +88,7 @@ declara_var :  {
 tipo        :  INTEIRO
                {
                   tipo_corrente = inteiro;
-               }
-               | 
+               } | 
                BOOLEANO
                {
                   tipo_corrente = booleano;
@@ -109,12 +111,11 @@ lista_id_var:  lista_id_var VIRGULA IDENT
                   simples_t *atrib = novo_simb.atrib_vars;
                   atrib->deslocamento = num_vars;
 
-                  insere(&ts, &novo_simb);
+                  insere_ts(&ts, &novo_simb);
 
                   num_vars++;
                   num_vars_por_tipo++;
-               }
-               |
+               } |
                IDENT 
                { /* insere vars na tabela de s�mbolos */
                   simb_t novo_simb;
@@ -131,15 +132,14 @@ lista_id_var:  lista_id_var VIRGULA IDENT
                   simples_t *atrib = novo_simb.atrib_vars;
                   atrib->deslocamento = num_vars;
 
-                  insere(&ts, &novo_simb);
+                  insere_ts(&ts, &novo_simb);
 
                   num_vars++;
                   num_vars_por_tipo++;
                }
 ;
 
-lista_idents:  lista_idents VIRGULA IDENT
-               | 
+lista_idents:  lista_idents VIRGULA IDENT | 
                IDENT
 ;
 
@@ -153,21 +153,19 @@ comando_composto: T_BEGIN comandos T_END
                            conta_vars++;
                            i--;
                      }
-                     retira(&ts, conta_vars);
+                     retira_ts(&ts, conta_vars);
 
                      char dmem[TAM_ID];
                      sprintf(dmem, "DMEM %i", conta_vars);
                      geraCodigo(NULL, dmem);
 
                      printf("desalocado\n");
-                     imprime(&ts);
-                  }
-                  |
+                     imprime_ts(&ts);
+                  } |
                   T_BEGIN T_END
 ;
 
-comandos:   comandos comando
-            |
+comandos:   comandos comando |
             comando
 ;
 
@@ -177,42 +175,238 @@ comando: comando_sem_rotulo
 comando_sem_rotulo:  atribuicao
 ;
 
-atribuicao: variavel ATRIBUICAO expressao
+atribuicao: variavel_esq ATRIBUICAO expressao
             {
+               tipo_t t;
+               verifica_tipo(&t, 2);
+
                simples_t *atrib = ts.tabela[l_elem].atrib_vars;
-               if(atrib->tipo == tipo_corrente) {
-                  char armz[TAM_ID];
-                  sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
-                  geraCodigo(NULL, armz);
-               }else
-                  imprimeErro("tipos incompativeis");
+               char armz[TAM_ID];
+               sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+               geraCodigo(NULL, armz);
             }
             PONTO_E_VIRGULA
 ;
 
+expressao: expressao_simples expr_opcional
+;
+
+expr_opcional: relacao expressao_simples
+               {
+                  tipo_t t;
+                  verifica_tipo(&t, 2);
+                  desempilha(&pil_tipo);
+                  empilha(&pil_tipo, booleano);
+
+                  if(t != inteiro && t != booleano)
+                     imprimeErro("tipos incompativeis");
+
+                  if(relacao == simb_igual)
+                     geraCodigo(NULL, "CMIG");
+                  else if(relacao == simb_diferente)
+                     geraCodigo(NULL, "CMDG");
+                  else if(t != booleano) {
+                     if(relacao == simb_menor)
+                        geraCodigo(NULL, "CMME");
+                     else if(relacao == simb_menor_igual)
+                        geraCodigo(NULL, "CMEG");
+                     else if(relacao == simb_maior)
+                        geraCodigo(NULL, "CMMA");
+                     else if(relacao == simb_maior_igual)
+                        geraCodigo(NULL, "CMAG");
+                  }else
+                     imprimeErro("tipos incompativeis");
+               } |
+;
+
+relacao: IGUAL 
+         {
+            relacao = simb_igual;
+         } |
+         DIFERENTE 
+         {
+            relacao = simb_diferente;
+         } |
+         MENOR 
+         {
+            relacao = simb_menor;
+         } |
+         MENOR_IGUAL 
+         {
+            relacao = simb_menor_igual;
+         } |
+         MAIOR_IGUAL 
+         {
+            relacao = simb_maior_igual;
+         } |
+         MAIOR
+         {
+            relacao = simb_maior;
+         } 
+;
+
+expressao_simples:   termo |
+                     MAIS termo 
+                     {
+                        tipo_t t;
+                        verifica_tipo(&t, 1);
+
+                        if(t != inteiro)
+                           imprimeErro("tipos incompativeis");
+                     }|
+                     MENOS termo
+                     {
+                        tipo_t t;
+                        verifica_tipo(&t, 1);
+
+                        if(t != inteiro)
+                           imprimeErro("tipos incompativeis");
+
+                        geraCodigo(NULL, "IVNR");
+                     }  
+                     |
+                     expressao_simples MAIS termo
+                     {
+                        tipo_t t;
+                        verifica_tipo(&t, 2);
+
+                        if(t != inteiro)
+                           imprimeErro("tipos incompativeis");
+
+                        geraCodigo(NULL, "SOMA");
+                     } |
+                     expressao_simples MENOS termo 
+                     {
+                        tipo_t t;
+                        verifica_tipo(&t, 2);
+
+                        if(t != inteiro)
+                           imprimeErro("tipos incompativeis");
+
+                        geraCodigo(NULL, "SUBT");
+                     } |
+                     expressao_simples OU termo
+                     {
+                        tipo_t t;
+                        verifica_tipo(&t, 2);
+
+                        if(t != booleano)
+                           imprimeErro("tipos incompativeis");
+
+                        geraCodigo(NULL, "DISJ");
+                     } 
+;
+
+termo:   fator |
+         termo VEZES fator 
+         {
+            tipo_t t;
+            verifica_tipo(&t, 2);
+
+            if(t != inteiro)
+               imprimeErro("tipos incompativeis");
+
+            geraCodigo(NULL, "MULT");
+         } |
+         termo DIVIDIDO fator 
+         {
+            tipo_t t;
+            verifica_tipo(&t, 2);
+
+            if(t != inteiro)
+               imprimeErro("tipos incompativeis");
+
+            geraCodigo(NULL, "DIVI");
+         } |
+         termo E fator
+         {
+            tipo_t t;
+            verifica_tipo(&t, 2);
+
+            if(t != booleano)
+               imprimeErro("tipos incompativeis");
+
+            geraCodigo(NULL, "CONJ");
+         } 
+;
+
+fator:   variavel |
+         numero |
+         ABRE_PARENTESES expressao FECHA_PARENTESES |
+         NAO fator
+         {
+            tipo_t t;
+            verifica_tipo(&t, 1);
+
+            if(t != booleano)
+               imprimeErro("tipos incompativeis");
+
+            geraCodigo(NULL, "NEGA");
+         } 
+;
+
 variavel:   IDENT
             {
-               l_elem = busca(&ts, token);
+               int indice = busca_ts(&ts, token);
 
-               if(l_elem == -1)
+               if(indice == -1)
                   imprimeErro("variavel nao declarada");
                
-               if(ts.tabela[l_elem].categoria != simples)
+               if(ts.tabela[indice].categoria != simples)
                   imprimeErro("variavel nao eh simples");
+
+               simples_t *atrib = ts.tabela[indice].atrib_vars;
+               empilha(&pil_tipo, atrib->tipo);
+
+               char crvl[TAM_ID];
+               sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+               geraCodigo(NULL, crvl);
             }
 ;
 
-expressao:  NUMERO
-            {
-               tipo_corrente = inteiro;
+variavel_esq:  IDENT
+               {
+                  l_elem = busca_ts(&ts, token);
 
-               char crct[TAM_ID];
-               sprintf(crct, "CRCT %s", token);
-               geraCodigo(NULL, crct);
-            }
+                  if(l_elem == -1)
+                     imprimeErro("variavel nao declarada");
+                  
+                  if(ts.tabela[l_elem].categoria != simples)
+                     imprimeErro("variavel nao eh simples");
+
+                  simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+                  empilha(&pil_tipo, atrib->tipo);
+               }
+;
+
+numero:  NUMERO
+         {
+            empilha(&pil_tipo, inteiro);
+
+            char crct[TAM_ID];
+            sprintf(crct, "CRCT %s", token);
+            geraCodigo(NULL, crct);
+         }
 ;
 
 %%
+
+void verifica_tipo(tipo_t *t, int num_op) {
+
+   if(num_op == 2) {
+      tipo_t tipo_op1 = topo_pil(&pil_tipo); desempilha(&pil_tipo);
+      tipo_t tipo_op2 = topo_pil(&pil_tipo);
+
+      if(tipo_op1 != tipo_op2)
+         imprimeErro("tipos incompativeis");
+
+      *t = tipo_op1;
+   }else if(num_op == 1) {
+      tipo_t tipo_op1 = topo_pil(&pil_tipo);
+
+      *t = tipo_op1;
+   }
+}
 
 int main (int argc, char** argv) {
    FILE* fp;
@@ -233,8 +427,10 @@ int main (int argc, char** argv) {
 /* -------------------------------------------------------------------
  *  Inicia a Tabela de S�mbolos
  * ------------------------------------------------------------------- */
-   inicializa(&ts);
+   inicializa_ts(&ts);
    nivel_lexico = -1;
+
+   inicializa_pil(&pil_tipo);
 
    yyin=fp;
    yyparse();

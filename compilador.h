@@ -11,6 +11,10 @@
  *
  * ------------------------------------------------------------------- */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #define TAM_TOKEN 16
 
 typedef enum simbolos {
@@ -22,8 +26,8 @@ typedef enum simbolos {
   simb_rotulo, simb_tipo, simb_vetor, simb_de, simb_procedimento,
   simb_funcao, simb_pular, simb_se, simb_entao, simb_senao,
   simb_enquanto, simb_faca, simb_igual, simb_diferente, simb_menor, simb_menor_igual, 
-  simb_maior_igual, simb_maior, simb_adicao, simb_subtracao, simb_multiplicacao,
-  simb_divisao, simb_nao, simb_e, simb_ou, simb_abre_colchetes, simb_fecha_colchetes,
+  simb_maior_igual, simb_maior, simb_mais, simb_menos, simb_vezes,
+  simb_dividido, simb_nao, simb_e, simb_ou, simb_abre_colchetes, simb_fecha_colchetes,
 
   simb_inteiro, simb_booleano
 } simbolos;
@@ -76,6 +80,12 @@ typedef struct tab_simb_t {
   simb_t tabela[TAM_TAB_SIMB];
 } tab_simb_t;
 
+#define TAM_MAX_PILHA 4096
+
+typedef struct pilha_t {
+  int topo;
+  int pilha[TAM_MAX_PILHA];
+}pilha_t;
 
 
 /* -------------------------------------------------------------------
@@ -106,8 +116,19 @@ int imprimeErro (char* erro);
  * prototipos globais p/ manipular a tabela de simbolos
  * ------------------------------------------------------------------- */
 
-void inicializa(tab_simb_t *ts);
-void insere(tab_simb_t *ts, simb_t *simb);
-int busca(tab_simb_t *ts, const unsigned char *id);
-void retira(tab_simb_t *ts, int n);
-void imprime(tab_simb_t *ts);
+void inicializa_ts(tab_simb_t *ts);
+void insere_ts(tab_simb_t *ts, simb_t *simb);
+int busca_ts(tab_simb_t *ts, const unsigned char *id);
+void retira_ts(tab_simb_t *ts, int n);
+void imprime_ts(tab_simb_t *ts);
+
+/* -------------------------------------------------------------------
+ * prototipos globais p/ manipular uma pilha de indices
+ * ------------------------------------------------------------------- */
+
+void inicializa_pil(pilha_t *p);
+int pil_vazia(pilha_t *p);
+int tamanho_pil(pilha_t *p);
+void empilha(pilha_t *p, int t);
+void desempilha(pilha_t *p);
+int topo_pil(pilha_t *p);

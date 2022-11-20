@@ -10,12 +10,12 @@ tab_simb_t ts;
 tipo_t tipo_corrente;
 int l_elem;
 
-void inicializa(tab_simb_t *ts) {
+void inicializa_ts(tab_simb_t *ts) {
 
     ts->topo = -1;
 }
 
-void insere(tab_simb_t *ts, simb_t *simb) {
+void insere_ts(tab_simb_t *ts, simb_t *simb) {
 
     if(ts->topo + 1 < TAM_TAB_SIMB) {
         ts->topo++;
@@ -26,7 +26,7 @@ void insere(tab_simb_t *ts, simb_t *simb) {
     }
 }
 
-int busca(tab_simb_t *ts, const unsigned char *id) {
+int busca_ts(tab_simb_t *ts, const unsigned char *id) {
 
     for(int i = ts->topo; i >= 0; i--) {
         if(strcmp(ts->tabela[i].id, id) == 0)
@@ -35,7 +35,7 @@ int busca(tab_simb_t *ts, const unsigned char *id) {
     return -1;
 }
 
-void retira(tab_simb_t *ts, int n) {
+void retira_ts(tab_simb_t *ts, int n) {
 
     while(ts->topo >= 0 && n > 0) {
         if(ts->tabela[ts->topo].categoria == procedimento) {
@@ -50,7 +50,7 @@ void retira(tab_simb_t *ts, int n) {
     }
 }
 
-void imprime(tab_simb_t *ts) {
+void imprime_ts(tab_simb_t *ts) {
 
     for(int i = 0; i <= ts->topo; i++) {
         printf("id: %s | cat: %i | nivel_l: %i | ", 
