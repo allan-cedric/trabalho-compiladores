@@ -10,7 +10,9 @@
 #include <string.h>
 #include "compilador.h"
 
-pilha_t pil_tipo;
+pilha_t pil_tipo, pil_rot;
+
+int num_rot = 0;
 
 void verifica_tipo(tipo_t *t, int num_op);
 
@@ -45,10 +47,28 @@ programa    :  {
 
 bloco       :
                parte_declara_vars
-               {
-               }
 
                comando_composto
+               {
+                  if(ts.topo != -1) {
+                     int i = ts.topo;
+                     int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
+                     int conta_vars = 0;
+                     while(i >= 0 && 
+                           ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
+                           conta_vars++;
+                           i--;
+                     }
+                     retira_ts(&ts, conta_vars);
+
+                     char dmem[TAM_ID];
+                     sprintf(dmem, "DMEM %i", conta_vars);
+                     geraCodigo(NULL, dmem);
+
+                     printf("desalocado\n");
+                  }
+                  imprime_ts(&ts);
+               }
 ;
 
 parte_declara_vars:  {
@@ -145,52 +165,12 @@ lista_idents:  lista_idents VIRGULA IDENT |
                IDENT
 ;
 
-comando_composto: T_BEGIN comandos T_END
-                  {
-                     if(ts.topo != -1) {
-                        int i = ts.topo;
-                        int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
-                        int conta_vars = 0;
-                        while(i >= 0 && 
-                              ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
-                              conta_vars++;
-                              i--;
-                        }
-                        retira_ts(&ts, conta_vars);
-
-                        char dmem[TAM_ID];
-                        sprintf(dmem, "DMEM %i", conta_vars);
-                        geraCodigo(NULL, dmem);
-
-                        printf("desalocado\n");
-                     }
-                     imprime_ts(&ts);
-                  } |
+comando_composto: T_BEGIN comandos T_END |
                   T_BEGIN T_END
-                  {
-                     if(ts.topo != -1) {
-                        int i = ts.topo;
-                        int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
-                        int conta_vars = 0;
-                        while(i >= 0 && 
-                              ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
-                              conta_vars++;
-                              i--;
-                        }
-                        retira_ts(&ts, conta_vars);
-
-                        char dmem[TAM_ID];
-                        sprintf(dmem, "DMEM %i", conta_vars);
-                        geraCodigo(NULL, dmem);
-
-                        printf("desalocado\n");
-                     }
-                     imprime_ts(&ts);
-                  }
 ;
 
-comandos:   comandos comando |
-            comando
+comandos:   comandos comando PONTO_E_VIRGULA |
+            comando PONTO_E_VIRGULA
 ;
 
 comando: comando_sem_rotulo
@@ -199,10 +179,11 @@ comando: comando_sem_rotulo
 comando_sem_rotulo:  atribuicao |
                      comando_repetitivo |
                      leitura |
-                     impressao
+                     impressao |
+                     comando_composto
 ;
 
-leitura:  LE ABRE_PARENTESES le_var FECHA_PARENTESES PONTO_E_VIRGULA
+leitura:  LE ABRE_PARENTESES le_var FECHA_PARENTESES
 ;
 
 le_var:  le_var VIRGULA IDENT
@@ -245,7 +226,7 @@ le_var:  le_var VIRGULA IDENT
          }
 ;
 
-impressao:  ESCREVE ABRE_PARENTESES impr_var_ou_num FECHA_PARENTESES PONTO_E_VIRGULA
+impressao:  ESCREVE ABRE_PARENTESES impr_var_ou_num FECHA_PARENTESES
 ;
 
 impr_var_ou_num:  impr_var_ou_num VIRGULA variavel
@@ -266,8 +247,35 @@ impr_var_ou_num:  impr_var_ou_num VIRGULA variavel
                   }
 ;
 
-comando_repetitivo:  ENQUANTO expressao FACA
+comando_repetitivo:  ENQUANTO
+                     {
+                        char rot[TAM_ID];
+                        sprintf(rot, "R%02i", num_rot);
+                        empilha(&pil_rot, num_rot);
+                        empilha(&pil_rot, num_rot + 1);
+                        geraCodigo(rot, "NADA");
+                        num_rot += 2;
+                     }
+                     expressao
+                     {
+                        char dsvf[TAM_ID];
+                        sprintf(dsvf, "DSVF R%02i", topo_pil(&pil_rot));
+                        geraCodigo(NULL, dsvf);
+                     } 
+                     FACA
                      comando_sem_rotulo
+                     {
+                        int rot_2 = topo_pil(&pil_rot); desempilha(&pil_rot);
+                        int rot_1 = topo_pil(&pil_rot); desempilha(&pil_rot);
+
+                        char dsvs[TAM_ID];
+                        sprintf(dsvs, "DSVS R%02i", rot_1);
+                        geraCodigo(NULL, dsvs);
+
+                        char rot[TAM_ID];
+                        sprintf(rot, "R%02i", rot_2);
+                        geraCodigo(rot, "NADA");
+                     }
 ;
 
 atribuicao: variavel_esq ATRIBUICAO expressao
@@ -282,7 +290,6 @@ atribuicao: variavel_esq ATRIBUICAO expressao
 
                l_elem = -1;
             }
-            PONTO_E_VIRGULA
 ;
 
 expressao: expressao_simples expr_opcional
@@ -540,6 +547,7 @@ int main (int argc, char** argv) {
    l_elem = -1;
 
    inicializa_pil(&pil_tipo);
+   inicializa_pil(&pil_rot);
 
    yyin=fp;
    yyparse();
