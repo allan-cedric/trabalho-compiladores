@@ -254,6 +254,16 @@ boolean {
   return BOOLEANO;
 }
 
+read {
+  trata_token(simb_le, " leitura ");
+  return LE;
+}
+
+write {
+  trata_token(simb_escreve, " escrita ");
+  return ESCREVE;
+}
+
 {ident} {
   trata_token(simb_identificador, " ident ");
   return IDENT;

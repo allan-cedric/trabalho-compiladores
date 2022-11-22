@@ -40,6 +40,7 @@ void geraCodigo (char* rot, char* comando) {
 }
 
 int imprimeErro ( char* erro ) {
+  retira_ts(&ts, ts.topo + 1);
   fprintf (stderr, "Erro na linha %d - %s\n", nl, erro);
   exit(-1);
 }

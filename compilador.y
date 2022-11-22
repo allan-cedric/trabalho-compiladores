@@ -29,6 +29,8 @@ void verifica_tipo(tipo_t *t, int num_op);
 
 %token INTEIRO BOOLEANO
 
+%token LE ESCREVE
+
 %%
 
 programa    :  {
@@ -145,24 +147,46 @@ lista_idents:  lista_idents VIRGULA IDENT |
 
 comando_composto: T_BEGIN comandos T_END
                   {
-                     int i = ts.topo;
-                     int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
-                     int conta_vars = 0;
-                     while(i >= 0 && 
-                           ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
-                           conta_vars++;
-                           i--;
+                     if(ts.topo != -1) {
+                        int i = ts.topo;
+                        int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
+                        int conta_vars = 0;
+                        while(i >= 0 && 
+                              ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
+                              conta_vars++;
+                              i--;
+                        }
+                        retira_ts(&ts, conta_vars);
+
+                        char dmem[TAM_ID];
+                        sprintf(dmem, "DMEM %i", conta_vars);
+                        geraCodigo(NULL, dmem);
+
+                        printf("desalocado\n");
                      }
-                     retira_ts(&ts, conta_vars);
-
-                     char dmem[TAM_ID];
-                     sprintf(dmem, "DMEM %i", conta_vars);
-                     geraCodigo(NULL, dmem);
-
-                     printf("desalocado\n");
                      imprime_ts(&ts);
                   } |
                   T_BEGIN T_END
+                  {
+                     if(ts.topo != -1) {
+                        int i = ts.topo;
+                        int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
+                        int conta_vars = 0;
+                        while(i >= 0 && 
+                              ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
+                              conta_vars++;
+                              i--;
+                        }
+                        retira_ts(&ts, conta_vars);
+
+                        char dmem[TAM_ID];
+                        sprintf(dmem, "DMEM %i", conta_vars);
+                        geraCodigo(NULL, dmem);
+
+                        printf("desalocado\n");
+                     }
+                     imprime_ts(&ts);
+                  }
 ;
 
 comandos:   comandos comando |
@@ -172,7 +196,78 @@ comandos:   comandos comando |
 comando: comando_sem_rotulo
 ;
 
-comando_sem_rotulo:  atribuicao
+comando_sem_rotulo:  atribuicao |
+                     comando_repetitivo |
+                     leitura |
+                     impressao
+;
+
+leitura:  LE ABRE_PARENTESES le_var FECHA_PARENTESES PONTO_E_VIRGULA
+;
+
+le_var:  le_var VIRGULA IDENT
+         {
+            geraCodigo(NULL, "LEIT");
+
+            int indice = busca_ts(&ts, token);
+
+            if(indice == -1)
+               imprimeErro("variavel nao declarada");
+
+            if(ts.tabela[indice].categoria != simples)
+               imprimeErro("categoria incompativel");
+
+            simples_t *atrib = ts.tabela[indice].atrib_vars;
+
+            char armz[TAM_ID];
+            sprintf(armz, "ARMZ %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+
+            geraCodigo(NULL, armz);
+         } |
+         IDENT
+         {
+            geraCodigo(NULL, "LEIT");
+
+            int indice = busca_ts(&ts, token);
+
+            if(indice == -1)
+               imprimeErro("variavel nao declarada");
+
+            if(ts.tabela[indice].categoria != simples)
+               imprimeErro("categoria incompativel");
+
+            simples_t *atrib = ts.tabela[indice].atrib_vars;
+
+            char armz[TAM_ID];
+            sprintf(armz, "ARMZ %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+
+            geraCodigo(NULL, armz);
+         }
+;
+
+impressao:  ESCREVE ABRE_PARENTESES impr_var_ou_num FECHA_PARENTESES PONTO_E_VIRGULA
+;
+
+impr_var_ou_num:  impr_var_ou_num VIRGULA variavel
+                  {
+                     geraCodigo(NULL, "IMPR"); 
+                  } |
+                  impr_var_ou_num VIRGULA numero 
+                  {
+                     geraCodigo(NULL, "IMPR"); 
+                  }|
+                  variavel 
+                  {
+                     geraCodigo(NULL, "IMPR"); 
+                  }|
+                  numero
+                  {
+                     geraCodigo(NULL, "IMPR"); 
+                  }
+;
+
+comando_repetitivo:  ENQUANTO expressao FACA
+                     comando_sem_rotulo
 ;
 
 atribuicao: variavel_esq ATRIBUICAO expressao
@@ -184,6 +279,8 @@ atribuicao: variavel_esq ATRIBUICAO expressao
                char armz[TAM_ID];
                sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
                geraCodigo(NULL, armz);
+
+               l_elem = -1;
             }
             PONTO_E_VIRGULA
 ;
@@ -263,8 +360,7 @@ expressao_simples:   termo |
                            imprimeErro("tipos incompativeis");
 
                         geraCodigo(NULL, "IVNR");
-                     }  
-                     |
+                     } |
                      expressao_simples MAIS termo
                      {
                         tipo_t t;
@@ -381,7 +477,19 @@ variavel_esq:  IDENT
 
 numero:  NUMERO
          {
-            empilha(&pil_tipo, inteiro);
+            int eh_booleano = 0;
+            if(l_elem != -1) {
+               simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+               if(atrib->tipo == booleano) {
+                  if(!strcmp(token, "0") || !strcmp(token, "1"))
+                     eh_booleano = 1;
+               }
+            }
+
+            if(eh_booleano)
+               empilha(&pil_tipo, booleano);
+            else
+               empilha(&pil_tipo, inteiro);
 
             char crct[TAM_ID];
             sprintf(crct, "CRCT %s", token);
@@ -429,6 +537,7 @@ int main (int argc, char** argv) {
  * ------------------------------------------------------------------- */
    inicializa_ts(&ts);
    nivel_lexico = -1;
+   l_elem = -1;
 
    inicializa_pil(&pil_tipo);
 

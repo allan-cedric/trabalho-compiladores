@@ -29,7 +29,9 @@ typedef enum simbolos {
   simb_maior_igual, simb_maior, simb_mais, simb_menos, simb_vezes,
   simb_dividido, simb_nao, simb_e, simb_ou, simb_abre_colchetes, simb_fecha_colchetes,
 
-  simb_inteiro, simb_booleano
+  simb_inteiro, simb_booleano,
+
+  simb_le, simb_escreve
 } simbolos;
 
 #define TAM_ID 1025
