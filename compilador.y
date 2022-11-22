@@ -33,6 +33,9 @@ void verifica_tipo(tipo_t *t, int num_op);
 
 %token LE ESCREVE
 
+%nonassoc MENOR_DO_QUE_SENAO
+%nonassoc SENAO
+
 %%
 
 programa    :  {
@@ -180,7 +183,8 @@ comando_sem_rotulo:  atribuicao |
                      comando_repetitivo |
                      leitura |
                      impressao |
-                     comando_composto
+                     comando_composto |
+                     comando_condicional
 ;
 
 leitura:  LE ABRE_PARENTESES le_var FECHA_PARENTESES
@@ -265,17 +269,54 @@ comando_repetitivo:  ENQUANTO
                      FACA
                      comando_sem_rotulo
                      {
-                        int rot_2 = topo_pil(&pil_rot); desempilha(&pil_rot);
-                        int rot_1 = topo_pil(&pil_rot); desempilha(&pil_rot);
+                        int rot_saida = topo_pil(&pil_rot); desempilha(&pil_rot);
+                        int rot_entrada = topo_pil(&pil_rot); desempilha(&pil_rot);
 
                         char dsvs[TAM_ID];
-                        sprintf(dsvs, "DSVS R%02i", rot_1);
+                        sprintf(dsvs, "DSVS R%02i", rot_entrada);
                         geraCodigo(NULL, dsvs);
 
                         char rot[TAM_ID];
-                        sprintf(rot, "R%02i", rot_2);
+                        sprintf(rot, "R%02i", rot_saida);
                         geraCodigo(rot, "NADA");
                      }
+;
+
+comando_condicional: SE expressao
+                     {
+                        char dsvf[TAM_ID];
+                        sprintf(dsvf, "DSVF R%02i", num_rot);
+                        empilha(&pil_rot, num_rot);
+                        empilha(&pil_rot, num_rot + 1);
+                        geraCodigo(NULL, dsvf);
+                        num_rot += 2;
+                     }
+                     ENTAO 
+                     comando_sem_rotulo 
+                     {
+                        char dsvs[TAM_ID];
+                        sprintf(dsvs, "DSVS R%02i", topo_pil(&pil_rot));
+                        geraCodigo(NULL, dsvs);
+                     }
+                     senao
+                     {
+                        char rot[TAM_ID];
+                        sprintf(rot, "R%02i", topo_pil(&pil_rot));
+                        geraCodigo(rot, "NADA");
+
+                        desempilha(&pil_rot);
+                        desempilha(&pil_rot);
+                     }
+;
+
+senao:   SENAO
+         {
+            char rot[TAM_ID];
+            sprintf(rot, "R%02i", topo_pil(&pil_rot) - 1);
+            geraCodigo(rot, "NADA");
+         }
+         comando_sem_rotulo |
+         %prec MENOR_DO_QUE_SENAO
 ;
 
 atribuicao: variavel_esq ATRIBUICAO expressao
