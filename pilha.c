@@ -17,14 +17,18 @@ int tamanho_pil(pilha_t *p) {
 
 void empilha(pilha_t *p, int i) {
     
-    if(tamanho_pil(p) < TAM_MAX_PILHA)
-        p->pilha[++p->topo] = i;
+    if(tamanho_pil(p) >= TAM_MAX_PILHA)
+        return;
+
+    p->pilha[++p->topo] = i;
 }
 
-void desempilha(pilha_t *p) {
+void desempilha(pilha_t *p, int n) {
+    
+    if(pil_vazia(p) || n < 0 || n > tamanho_pil(p))
+        return;
 
-    if(!pil_vazia(p))
-        p->topo--;
+    p->topo -= n;
 }
 
 int topo_pil(pilha_t *p) {

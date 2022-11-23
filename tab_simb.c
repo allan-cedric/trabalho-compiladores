@@ -1,13 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "compilador.h"
 
 int nivel_lexico;
-int desloc;
+
 int num_vars, num_vars_por_tipo;
 tab_simb_t ts;
-tipo_t tipo_corrente;
+tipos tipo_corrente;
 int l_elem;
 
 void inicializa_ts(tab_simb_t *ts) {
@@ -15,9 +12,19 @@ void inicializa_ts(tab_simb_t *ts) {
     ts->topo = -1;
 }
 
+int ts_vazia(tab_simb_t *ts) {
+
+    return ts->topo == -1;
+}
+
+int tamanho_ts(tab_simb_t *ts) {
+
+    return ts->topo + 1;
+}
+
 void insere_ts(tab_simb_t *ts, simb_t *simb) {
 
-    if(ts->topo + 1 < TAM_TAB_SIMB) {
+    if(tamanho_ts(ts) < TAM_TAB_SIMB) {
         ts->topo++;
         strncpy(ts->tabela[ts->topo].id, simb->id, strlen(simb->id) + 1);
         ts->tabela[ts->topo].categoria = simb->categoria;
@@ -37,9 +44,9 @@ int busca_ts(tab_simb_t *ts, const unsigned char *id) {
 
 void retira_ts(tab_simb_t *ts, int n) {
 
-    while(ts->topo >= 0 && n > 0) {
+    while(!ts_vazia(ts) && n > 0) {
         if(ts->tabela[ts->topo].categoria == procedimento) {
-            procedimento_t *atrib = ts->tabela[ts->topo].atrib_vars;
+            procedimentos *atrib = ts->tabela[ts->topo].atrib_vars;
             free(atrib->params);
             atrib->params = NULL;
         }
@@ -56,7 +63,7 @@ void imprime_ts(tab_simb_t *ts) {
         printf("id: %s | cat: %i | nivel_l: %i | ", 
         ts->tabela[i].id, (int)ts->tabela[i].categoria, ts->tabela[i].nivel_lexico);
 
-        simples_t *atrib = ts->tabela[i].atrib_vars;
+        var_simples *atrib = ts->tabela[i].atrib_vars;
         printf("tipo: %i | desloc: %i\n", atrib->tipo, atrib->deslocamento);
     }
 }

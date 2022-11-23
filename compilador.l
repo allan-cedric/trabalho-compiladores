@@ -14,9 +14,8 @@
 
 %{
 
-
-#include<stdio.h>
-#include<string.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "compilador.h"
 #include "compilador.tab.h"
@@ -110,63 +109,63 @@ end {
 }
 
 label {
-  trata_token(simb_rotulo, " rotulo ");
-  return ROTULO;
+  trata_token(simb_label, " label ");
+  return LABEL;
 }
 
 type {
-  trata_token(simb_tipo, " tipo ");
-  return TIPO;
+  trata_token(simb_type, " type ");
+  return TYPE;
 }
 
 array {
-  trata_token(simb_vetor, " vetor ");
-  return VETOR;
+  trata_token(simb_array, " array ");
+  return ARRAY;
 }
 
 of {
-  trata_token(simb_de, " de ");
-  return DE;
+  trata_token(simb_of, " of ");
+  return OF;
 }
 
 procedure {
-  trata_token(simb_procedimento, " procedimento ");
-  return PROCEDIMENTO;
+  trata_token(simb_procedure, " procedure ");
+  return PROCEDURE;
 }
 
 function {
-  trata_token(simb_funcao, " funcao ");
-  return FUNCAO;
+  trata_token(simb_function, " function ");
+  return FUNCTION;
 }
 
 goto {
-  trata_token(simb_pular, " pular ");
-  return PULAR;
+  trata_token(simb_goto, " goto ");
+  return GOTO;
 }
 
 if {
-  trata_token(simb_se, " se ");
-  return SE;
+  trata_token(simb_if, " if ");
+  return IF;
 }
 
 then {
-  trata_token(simb_entao, " entao ");
-  return ENTAO;
+  trata_token(simb_then, " then ");
+  return THEN;
 }
 
 else {
-  trata_token(simb_senao, " senao ");
-  return SENAO;
+  trata_token(simb_else, " else ");
+  return ELSE;
 }
 
 while {
-  trata_token(simb_enquanto, " enquanto ");
-  return ENQUANTO;
+  trata_token(simb_while, " while ");
+  return WHILE;
 }
 
 do {
-  trata_token(simb_faca, " faca ");
-  return FACA;
+  trata_token(simb_do, " do ");
+  return DO;
 }
 
 \= {
@@ -220,18 +219,18 @@ div {
 }
 
 not {
-  trata_token(simb_nao, " nao ");
-  return NAO;
+  trata_token(simb_not, " not ");
+  return NOT;
 }
 
 and {
-  trata_token(simb_e, " e ");
-  return E;
+  trata_token(simb_and, " and ");
+  return AND;
 }
 
 or {
-  trata_token(simb_ou, " ou ");
-  return OU;
+  trata_token(simb_or, " or ");
+  return OR;
 }
 
 \[ {
@@ -245,23 +244,23 @@ or {
 }
 
 integer {
-  trata_token(simb_inteiro, " inteiro ");
-  return INTEIRO;
+  trata_token(simb_integer, " integer ");
+  return INTEGER;
 }
 
 boolean {
-  trata_token(simb_booleano, " booleano ");
-  return BOOLEANO;
+  trata_token(simb_boolean, " boolean ");
+  return BOOLEAN;
 }
 
 read {
-  trata_token(simb_le, " leitura ");
-  return LE;
+  trata_token(simb_read, " read ");
+  return READ;
 }
 
 write {
-  trata_token(simb_escreve, " escrita ");
-  return ESCREVE;
+  trata_token(simb_write, " write ");
+  return WRITE;
 }
 
 {ident} {

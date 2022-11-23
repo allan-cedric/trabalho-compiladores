@@ -23,56 +23,56 @@ typedef enum simbolos {
   simb_ponto, simb_virgula, simb_ponto_e_virgula, simb_dois_pontos,
   simb_atribuicao, simb_abre_parenteses, simb_fecha_parenteses,
 
-  simb_rotulo, simb_tipo, simb_vetor, simb_de, simb_procedimento,
-  simb_funcao, simb_pular, simb_se, simb_entao, simb_senao,
-  simb_enquanto, simb_faca, simb_igual, simb_diferente, simb_menor, simb_menor_igual, 
+  simb_label, simb_type, simb_array, simb_of, simb_procedure,
+  simb_function, simb_goto, simb_if, simb_then, simb_else,
+  simb_while, simb_do, simb_igual, simb_diferente, simb_menor, simb_menor_igual, 
   simb_maior_igual, simb_maior, simb_mais, simb_menos, simb_vezes,
-  simb_dividido, simb_nao, simb_e, simb_ou, simb_abre_colchetes, simb_fecha_colchetes,
+  simb_dividido, simb_not, simb_and, simb_or, simb_abre_colchetes, simb_fecha_colchetes,
 
-  simb_inteiro, simb_booleano,
+  simb_integer, simb_boolean,
 
-  simb_le, simb_escreve
+  simb_read, simb_write
 } simbolos;
 
 #define TAM_ID 1025
 #define TAM_TAB_SIMB 4096
 
-typedef enum categoria_t {
+typedef enum categorias {
   simples,
   param_formal,
   procedimento
-} categoria_t;
+} categorias;
 
-typedef enum tipo_t {
+typedef enum tipos {
   inteiro,
   booleano
-} tipo_t;
+} tipos;
 
-typedef enum passagem_t {
+typedef enum passagens {
   valor,
   referencia
-} passagem_t;
+} passagens;
 
-typedef struct simples_t {
-  tipo_t tipo;
+typedef struct var_simples {
+  tipos tipo;
   int deslocamento;
-} simples_t;
+} var_simples;
 
-typedef struct param_formal_t {
-  tipo_t tipo;
+typedef struct param_formais {
+  tipos tipo;
   int deslocamento;
-  passagem_t passagem;
-} param_formal_t;
+  passagens passagem;
+} param_formais;
 
-typedef struct procedimento_t {
+typedef struct procedimentos {
   // rotulo interno ?
   int n_params;
-  param_formal_t *params;
-} procedimento_t;
+  param_formais *params;
+} procedimentos;
 
 typedef struct simb_t {
   unsigned char id[TAM_ID];
-  categoria_t categoria;
+  categorias categoria;
   int nivel_lexico;
   void *atrib_vars;
 } simb_t;
@@ -97,11 +97,11 @@ typedef struct pilha_t {
 extern simbolos simbolo, relacao;
 extern char token[TAM_TOKEN];
 extern int nivel_lexico;
-extern int desloc;
 extern int nl;
+
 extern tab_simb_t ts;
 extern int num_vars, num_vars_por_tipo;
-extern tipo_t tipo_corrente;
+extern tipos tipo_corrente;
 extern int l_elem;
 
 
@@ -119,6 +119,8 @@ int imprimeErro (char* erro);
  * ------------------------------------------------------------------- */
 
 void inicializa_ts(tab_simb_t *ts);
+int ts_vazia(tab_simb_t *ts);
+int tamanho_ts(tab_simb_t *ts);
 void insere_ts(tab_simb_t *ts, simb_t *simb);
 int busca_ts(tab_simb_t *ts, const unsigned char *id);
 void retira_ts(tab_simb_t *ts, int n);
@@ -132,5 +134,5 @@ void inicializa_pil(pilha_t *p);
 int pil_vazia(pilha_t *p);
 int tamanho_pil(pilha_t *p);
 void empilha(pilha_t *p, int t);
-void desempilha(pilha_t *p);
+void desempilha(pilha_t *p, int n);
 int topo_pil(pilha_t *p);
