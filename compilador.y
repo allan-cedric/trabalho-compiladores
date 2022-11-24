@@ -7,6 +7,7 @@
 #include "compilador.h"
 
 pilha_t pil_tipo, pil_rot;
+char idr[TAM_ID];
 int num_rot = 0;
 
 void insere_nova_var();
@@ -210,12 +211,47 @@ comandos :  comandos comando PONTO_E_VIRGULA
 comando  :  comando_sem_rotulo
 ;
 
-comando_sem_rotulo   :  atribuicao 
+comando_sem_rotulo   :  misc 
                         | comando_repetitivo 
                         | leitura 
                         | impressao 
                         | comando_composto 
                         | comando_condicional
+;
+
+misc  :  IDENT { strncpy(idr, token, strlen(token) + 1); } 
+         fatora
+;
+
+fatora   :  ATRIBUICAO
+            {
+               l_elem = busca_ts(&ts, idr);
+
+               if(l_elem == -1)
+                  imprimeErro("variavel nao declarada");
+               
+               if(ts.tabela[l_elem].categoria != simples)
+                  imprimeErro("variavel nao eh simples");
+
+               var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+               empilha(&pil_tipo, atrib->tipo);
+            }
+            atribuicao
+            | chamada_procedimento
+            {
+               int indice = busca_ts(&ts, idr);
+
+               if(indice == -1)
+                  imprimeErro("procedimento nao declarado");
+
+               if(ts.tabela[indice].categoria != procedimento)
+                  imprimeErro("categoria incompativel");
+
+               char chpr[TAM_ID * 2];
+               procedimento_t *atrib = ts.tabela[indice].atrib_vars;
+               sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, ts.tabela[indice].nivel_lexico);
+               geraCodigo(NULL, chpr);
+            }
 ;
 
 leitura  :  READ ABRE_PARENTESES le_var FECHA_PARENTESES
@@ -317,7 +353,18 @@ else  :  ELSE
          | %prec LOWER_THAN_ELSE
 ;
 
-atribuicao  :  variavel_esq ATRIBUICAO expressao
+chamada_procedimento :  lista_expressoes
+                        |
+;
+
+lista_expressoes  :  ABRE_PARENTESES lista_expressao FECHA_PARENTESES
+;
+
+lista_expressao   :  lista_expressao VIRGULA expressao
+                     | expressao
+;
+
+atribuicao  :  expressao
                {
                   tipos t;
                   verifica_tipo(&t, 2);
@@ -439,21 +486,6 @@ variavel :  IDENT
                sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
                geraCodigo(NULL, crvl);
             }
-;
-
-variavel_esq   :  IDENT
-                  {
-                     l_elem = busca_ts(&ts, token);
-
-                     if(l_elem == -1)
-                        imprimeErro("variavel nao declarada");
-                     
-                     if(ts.tabela[l_elem].categoria != simples)
-                        imprimeErro("variavel nao eh simples");
-
-                     var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
-                     empilha(&pil_tipo, atrib->tipo);
-                  }
 ;
 
 numero   :  NUMERO
