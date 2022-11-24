@@ -53,22 +53,22 @@ typedef enum passagens {
   referencia
 } passagens;
 
-typedef struct var_simples {
+typedef struct var_simples_t {
   tipos tipo;
   int deslocamento;
-} var_simples;
+} var_simples_t;
 
-typedef struct param_formais {
+typedef struct param_formal_t {
   tipos tipo;
   int deslocamento;
   passagens passagem;
-} param_formais;
+} param_formal_t;
 
-typedef struct procedimentos {
-  // rotulo interno ?
+typedef struct procedimento_t {
+  unsigned char rot_interno[TAM_ID];
   int n_params;
-  param_formais *params;
-} procedimentos;
+  param_formal_t *params;
+} procedimento_t;
 
 typedef struct simb_t {
   unsigned char id[TAM_ID];

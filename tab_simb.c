@@ -46,7 +46,7 @@ void retira_ts(tab_simb_t *ts, int n) {
 
     while(!ts_vazia(ts) && n > 0) {
         if(ts->tabela[ts->topo].categoria == procedimento) {
-            procedimentos *atrib = ts->tabela[ts->topo].atrib_vars;
+            procedimento_t *atrib = ts->tabela[ts->topo].atrib_vars;
             free(atrib->params);
             atrib->params = NULL;
         }
@@ -62,8 +62,17 @@ void imprime_ts(tab_simb_t *ts) {
     for(int i = 0; i <= ts->topo; i++) {
         printf("id: %s | cat: %i | nivel_l: %i | ", 
         ts->tabela[i].id, (int)ts->tabela[i].categoria, ts->tabela[i].nivel_lexico);
-
-        var_simples *atrib = ts->tabela[i].atrib_vars;
-        printf("tipo: %i | desloc: %i\n", atrib->tipo, atrib->deslocamento);
+        
+        if(ts->tabela[i].categoria == simples) {
+            var_simples_t *atrib = ts->tabela[i].atrib_vars;
+            printf("tipo: %i | desloc: %i\n", atrib->tipo, atrib->deslocamento);
+        }
+        else if(ts->tabela[i].categoria == procedimento) {
+            procedimento_t *atrib = ts->tabela[i].atrib_vars;
+            printf("rot.: %s | num. params: %i |", atrib->rot_interno, atrib->n_params);
+            for(int j = 0; j < atrib->n_params; j++)
+                printf(" tipo: %i , pass.: %i |", atrib->params->tipo, atrib->params->passagem);
+            printf("\n");
+        }
     }
 }

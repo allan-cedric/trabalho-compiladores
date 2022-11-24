@@ -39,6 +39,8 @@ numero [0-9]+
 
 comentario "(*".*"*)"
 
+comentario_linha "//".*
+
 %%
 
 {pulo_linha} {nl++;}
@@ -46,6 +48,8 @@ comentario "(*".*"*)"
 {descarte}
 
 {comentario}
+
+{comentario_linha}
 
 {numero} {
   trata_token(simb_numero, " numero ");

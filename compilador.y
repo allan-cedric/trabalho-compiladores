@@ -10,6 +10,7 @@ pilha_t pil_tipo, pil_rot;
 int num_rot = 0;
 
 void insere_nova_var();
+void insere_novo_proc();
 void read_var();
 void op_unaria(tipos tipo);
 void op_binaria(tipos tipo);
@@ -48,41 +49,41 @@ programa :  {
 ;
 
 bloco :  parte_declara_vars
+         parte_declara_subrotinas
          comando_composto
          {
             if(!ts_vazia(&ts)) {
-               int i = ts.topo;
-               int nivel_lexico_corrente = ts.tabela[i].nivel_lexico;
-               int conta_vars = 0;
-               while(i >= 0 && 
-                     ts.tabela[i].nivel_lexico == nivel_lexico_corrente) {
-                     conta_vars++;
-                     i--;
+               int conta_simb = 0;
+               for(int i = ts.topo; i >= 0; i--) {
+                  if(ts.tabela[i].nivel_lexico <= nivel_lexico && 
+                     ts.tabela[i].categoria == procedimento)
+                     break;
+                  conta_simb++;
                }
-               retira_ts(&ts, conta_vars);
 
-               char dmem[TAM_ID];
-               sprintf(dmem, "DMEM %i", conta_vars);
-               geraCodigo(NULL, dmem);
+               if(conta_simb > 0) {
+                  retira_ts(&ts, conta_simb);
 
-               printf("desalocado\n");
+                  char dmem[TAM_ID];
+                  sprintf(dmem, "DMEM %i", conta_simb);
+                  geraCodigo(NULL, dmem);
+
+                  // printf("desalocado\n");
+               }
             }
-            imprime_ts(&ts);
+            // imprime_ts(&ts);
          }
 ;
 
-parte_declara_vars   :  {
-                           nivel_lexico++;
-                           num_vars = 0;
-                        } 
+parte_declara_vars   :  { num_vars = 0; } 
                         VAR declara_vars 
                         {
                            char amem_k[TAM_ID];
                            sprintf(amem_k, "AMEM %i", num_vars);
                            geraCodigo(NULL, amem_k);
 
-                           printf("alocado\n");
-                           imprime_ts(&ts);
+                           // printf("alocado\n");
+                           // imprime_ts(&ts);
                         } |
 ; 
 
@@ -98,7 +99,7 @@ declara_var :  {
                   int i = ts.topo, j = num_vars_por_tipo;
                   while(i >= 0 && j > 0)
                   {
-                     var_simples *atrib = ts.tabela[i].atrib_vars;
+                     var_simples_t *atrib = ts.tabela[i].atrib_vars;
                      atrib->tipo = tipo_corrente;
                      i--; j--;
                   }
@@ -128,6 +129,74 @@ lista_id_var   :  lista_id_var VIRGULA IDENT
 
 lista_idents   :  lista_idents VIRGULA IDENT 
                   | IDENT
+;
+
+parte_declara_subrotinas   :  {
+                                 char dsvs[TAM_ID];
+                                 sprintf(dsvs, "DSVS R%02i", num_rot);                                 
+                                 geraCodigo(NULL, dsvs);
+                                 empilha(&pil_rot, num_rot);
+                                 num_rot++;
+                              }
+                              declara_subrotinas
+                              {
+                                 char rot[TAM_ID];
+                                 sprintf(rot, "R%02i", topo_pil(&pil_rot));
+                                 desempilha(&pil_rot, 1);
+                                 geraCodigo(rot, "NADA");
+                              }
+                              |
+;
+
+declara_subrotinas   :  declara_subrotinas declara_procedimento PONTO_E_VIRGULA
+                        | declara_subrotinas declara_funcao PONTO_E_VIRGULA
+                        | declara_procedimento PONTO_E_VIRGULA
+                        | declara_funcao PONTO_E_VIRGULA
+;
+
+declara_procedimento :  PROCEDURE IDENT
+                        {
+                           insere_novo_proc();
+
+                           char enpr[TAM_ID];
+                           sprintf(enpr, "ENPR %i", ts.tabela[ts.topo].nivel_lexico);
+                           procedimento_t *atrib = ts.tabela[ts.topo].atrib_vars;
+                           geraCodigo(atrib->rot_interno, enpr);
+                        }
+                        param_formais PONTO_E_VIRGULA bloco
+                        {
+                           int i;
+                           for(i = ts.topo; i >= 0; i--) {
+                              if(ts.tabela[i].categoria == procedimento &&
+                                 ts.tabela[i].nivel_lexico == nivel_lexico)
+                                 break;
+                           }
+
+                           char rtpr[TAM_ID];
+                           procedimento_t *atrib = ts.tabela[i].atrib_vars;
+                           sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
+                           geraCodigo(NULL, rtpr);
+                           desempilha(&pil_rot, 1);
+                           nivel_lexico--;
+                        }
+;
+
+declara_funcao :
+;
+
+param_formais  :  ABRE_PARENTESES secao_param FECHA_PARENTESES
+                  |
+;
+
+secao_param :  secao_param VIRGULA secao_param_formais
+               | secao_param_formais
+;
+
+secao_param_formais  :  var_opcional lista_id_var DOIS_PONTOS tipo
+;
+
+var_opcional   :  VAR
+                  |
 ;
 
 comando_composto  :  T_BEGIN comandos T_END 
@@ -253,7 +322,7 @@ atribuicao  :  variavel_esq ATRIBUICAO expressao
                   tipos t;
                   verifica_tipo(&t, 2);
 
-                  var_simples *atrib = ts.tabela[l_elem].atrib_vars;
+                  var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
                   char armz[TAM_ID];
                   sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
                   geraCodigo(NULL, armz);
@@ -363,7 +432,7 @@ variavel :  IDENT
                if(ts.tabela[indice].categoria != simples)
                   imprimeErro("variavel nao eh simples");
 
-               var_simples *atrib = ts.tabela[indice].atrib_vars;
+               var_simples_t *atrib = ts.tabela[indice].atrib_vars;
                empilha(&pil_tipo, atrib->tipo);
 
                char crvl[TAM_ID];
@@ -382,7 +451,7 @@ variavel_esq   :  IDENT
                      if(ts.tabela[l_elem].categoria != simples)
                         imprimeErro("variavel nao eh simples");
 
-                     var_simples *atrib = ts.tabela[l_elem].atrib_vars;
+                     var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
                      empilha(&pil_tipo, atrib->tipo);
                   }
 ;
@@ -391,7 +460,7 @@ numero   :  NUMERO
             {
                int eh_booleano = 0;
                if(l_elem != -1) {
-                  var_simples *atrib = ts.tabela[l_elem].atrib_vars;
+                  var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
                   if(atrib->tipo == booleano) {
                      if(!strcmp(token, "0") || !strcmp(token, "1"))
                         eh_booleano = 1;
@@ -418,18 +487,42 @@ void insere_nova_var() {
    novo_simb.categoria = simples;
    novo_simb.nivel_lexico = nivel_lexico;
    
-   novo_simb.atrib_vars = (var_simples *)malloc(sizeof(var_simples));
+   novo_simb.atrib_vars = (var_simples_t *)malloc(sizeof(var_simples_t));
    if(!novo_simb.atrib_vars) {
       fprintf(stderr, "erro de alocacao de memoria!\n");
       exit(-1);
    }
 
-   var_simples *atrib = novo_simb.atrib_vars;
+   var_simples_t *atrib = novo_simb.atrib_vars;
    atrib->deslocamento = num_vars;
 
    insere_ts(&ts, &novo_simb);
 
    num_vars++; num_vars_por_tipo++;
+}
+
+void insere_novo_proc() {
+
+   simb_t novo_simb;
+   strncpy(novo_simb.id, token, strlen(token) + 1);
+   novo_simb.categoria = procedimento;
+   novo_simb.nivel_lexico = ++nivel_lexico;
+   
+   novo_simb.atrib_vars = (procedimento_t *)malloc(sizeof(procedimento_t));
+   if(!novo_simb.atrib_vars) {
+      fprintf(stderr, "erro de alocacao de memoria!\n");
+      exit(-1);
+   }
+
+   procedimento_t *atrib = novo_simb.atrib_vars;
+   sprintf(atrib->rot_interno, "R%02i", num_rot);
+   atrib->n_params = 0;
+   atrib->params = NULL;
+
+   insere_ts(&ts, &novo_simb);
+
+   empilha(&pil_rot, num_rot);
+   num_rot++;
 }
 
 void read_var() {
@@ -444,7 +537,7 @@ void read_var() {
    if(ts.tabela[indice].categoria != simples)
       imprimeErro("categoria incompativel");
 
-   var_simples *atrib = ts.tabela[indice].atrib_vars;
+   var_simples_t *atrib = ts.tabela[indice].atrib_vars;
 
    char armz[TAM_ID];
    sprintf(armz, "ARMZ %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
@@ -507,7 +600,7 @@ int main (int argc, char** argv) {
  *  Inicia a Tabela de S�mbolos
  * ------------------------------------------------------------------- */
    inicializa_ts(&ts);
-   nivel_lexico = -1;
+   nivel_lexico = 0;
    l_elem = -1;
 
    inicializa_pil(&pil_tipo);
