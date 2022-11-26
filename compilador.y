@@ -8,8 +8,11 @@
 
 pilha_t pil_tipo, pil_rot;
 char idr[TAM_ID];
-int num_rot = 0;
+int indice_proc;
+int num_expr;
+int num_params, num_params_por_tipo;
 int pass_ref;
+int num_rot = 0;
 
 void insere_nova_var();
 void insere_novo_param();
@@ -55,7 +58,7 @@ bloco :  parte_declara_vars
                int conta_simb = 0;
                for(int i = ts.topo; i >= 0; i--) {
                   if(ts.tabela[i].nivel_lexico <= nivel_lexico && 
-                     ts.tabela[i].categoria == procedimento)
+                     ts.tabela[i].categoria != simples)
                      break;
                   conta_simb++;
                }
@@ -162,14 +165,33 @@ declara_procedimento :  PROCEDURE IDENT
                            sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
                            geraCodigo(NULL, rtpr);
                            desempilha(&pil_rot, 1);
+                           retira_ts(&ts, atrib->n_params);
                            nivel_lexico--;
                         }
 ;
 
-declara_funcao :
-;
+param_formais  :  { num_params = 0; }
+                  ABRE_PARENTESES secao_param FECHA_PARENTESES
+                  {
+                     procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                     atrib->n_params = num_params;
+                     atrib->params = (param_formal_t *)malloc(atrib->n_params * sizeof(param_formal_t));
+                     if(!atrib->params)
+                        imprimeErro("erro de alocacao de memoria");
 
-param_formais  :  ABRE_PARENTESES secao_param FECHA_PARENTESES
+                     int i = ts.topo, j = num_params;
+                     while(i >= 0 && j > 0)
+                     {
+                        param_formal_t *a = ts.tabela[i].atrib_vars;
+                        a->deslocamento = (j - num_params) - 4;
+
+                        atrib->params[i].tipo = a->tipo;
+                        atrib->params[i].deslocamento = a->deslocamento;
+                        atrib->params[i].passagem = a->passagem;
+
+                        i--; j--;
+                     }
+                  }
                   |
 ;
 
@@ -177,15 +199,28 @@ secao_param :  secao_param PONTO_E_VIRGULA secao_param_formais
                | secao_param_formais
 ;
 
-secao_param_formais  :  var_opcional lista_id_param DOIS_PONTOS tipo
+secao_param_formais  :  { num_params_por_tipo = 0; }
+                        var_opcional lista_id_param_formal DOIS_PONTOS tipo
+                        {
+                           int i = ts.topo, j = num_params_por_tipo;
+                           while(i >= 0 && j > 0)
+                           {
+                              param_formal_t *atrib = ts.tabela[i].atrib_vars;
+                              atrib->tipo = tipo_corrente;
+                              i--; j--;
+                           }
+                        }
 ;
 
 var_opcional   :  VAR { pass_ref = 1; }
                   | { pass_ref = 0; }
 ;
 
-lista_id_param   :   lista_id_param VIRGULA IDENT { insere_novo_param(); } 
-                     | IDENT { insere_novo_param(); }
+lista_id_param_formal   :  lista_id_param_formal VIRGULA IDENT { insere_novo_param(); } 
+                           | IDENT { insere_novo_param(); }
+;
+
+declara_funcao :
 ;
 
 comando_composto  :  T_BEGIN comandos T_END 
@@ -217,12 +252,15 @@ fatora   :  ATRIBUICAO
 
                if(l_elem == -1)
                   imprimeErro("variavel nao declarada");
-               
-               if(ts.tabela[l_elem].categoria != simples)
-                  imprimeErro("variavel nao eh simples");
 
-               var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
-               empilha(&pil_tipo, atrib->tipo);
+               if(ts.tabela[l_elem].categoria == simples) {
+                  var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+                  empilha(&pil_tipo, atrib->tipo);
+               } else if(ts.tabela[l_elem].categoria == param_formal) {
+                  param_formal_t *atrib = ts.tabela[l_elem].atrib_vars;
+                  empilha(&pil_tipo, atrib->tipo);
+               } else
+                  imprimeErro("categoria incompativel");
             }
             atribuicao
             | chamada_procedimento
@@ -235,8 +273,12 @@ fatora   :  ATRIBUICAO
                if(ts.tabela[indice].categoria != procedimento)
                   imprimeErro("categoria incompativel");
 
-               char chpr[TAM_ID * 2];
                procedimento_t *atrib = ts.tabela[indice].atrib_vars;
+
+               if(num_expr != atrib->n_params)
+                  imprimeErro("qtd. errada de parametros");
+
+               char chpr[TAM_ID * 2];
                sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
                geraCodigo(NULL, chpr);
             }
@@ -324,14 +366,14 @@ else  :  ELSE
 ;
 
 chamada_procedimento :  lista_expressoes
-                        |
+                        | { num_expr = 0; }
 ;
 
-lista_expressoes  :  ABRE_PARENTESES lista_expressao FECHA_PARENTESES
+lista_expressoes  :  { num_expr = 0; } ABRE_PARENTESES lista_expressao FECHA_PARENTESES
 ;
 
-lista_expressao   :  lista_expressao VIRGULA expressao
-                     | expressao
+lista_expressao   :  lista_expressao VIRGULA expressao { num_expr++ ;}
+                     | expressao { num_expr++ ;}
 ;
 
 atribuicao  :  expressao
@@ -445,15 +487,24 @@ variavel :  IDENT
 
                if(indice == -1)
                   imprimeErro("variavel nao declarada");
-               
-               if(ts.tabela[indice].categoria != simples)
-                  imprimeErro("variavel nao eh simples");
 
-               var_simples_t *atrib = ts.tabela[indice].atrib_vars;
-               empilha(&pil_tipo, atrib->tipo);
+               int deslocamento, tipo;
+               
+               if(ts.tabela[indice].categoria == simples) {
+                  var_simples_t *atrib = ts.tabela[indice].atrib_vars;
+                  tipo = atrib->tipo;
+                  deslocamento = atrib->deslocamento;
+               } else if(ts.tabela[indice].categoria == param_formal) {
+                  param_formal_t *atrib = ts.tabela[indice].atrib_vars;
+                  tipo = atrib->tipo;
+                  deslocamento = atrib->deslocamento;
+               } else
+                  imprimeErro("categoria incompativel");
+
+               empilha(&pil_tipo, tipo);
 
                char crvl[TAM_ID];
-               sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+               sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, deslocamento);
                geraCodigo(NULL, crvl);
             }
 ;
@@ -490,10 +541,8 @@ void insere_nova_var() {
    novo_simb.nivel_lexico = nivel_lexico;
    
    novo_simb.atrib_vars = (var_simples_t *)malloc(sizeof(var_simples_t));
-   if(!novo_simb.atrib_vars) {
-      fprintf(stderr, "erro de alocacao de memoria!\n");
-      exit(-1);
-   }
+   if(!novo_simb.atrib_vars)
+      imprimeErro("erro de alocacao de memoria");
 
    var_simples_t *atrib = novo_simb.atrib_vars;
    atrib->deslocamento = num_vars;
@@ -505,6 +554,25 @@ void insere_nova_var() {
 
 void insere_novo_param() {
 
+   simb_t novo_simb;
+   strncpy(novo_simb.id, token, strlen(token) + 1);
+   novo_simb.categoria = param_formal;
+   novo_simb.nivel_lexico = nivel_lexico;
+   
+   novo_simb.atrib_vars = (param_formal_t *)malloc(sizeof(param_formal_t));
+   if(!novo_simb.atrib_vars)
+      imprimeErro("erro de alocacao de memoria");
+
+   param_formal_t *atrib = novo_simb.atrib_vars;
+   if(pass_ref)
+      atrib->passagem = referencia;
+   else
+      atrib->passagem = valor;
+
+
+   insere_ts(&ts, &novo_simb);
+
+   num_params++; num_params_por_tipo++;
 }
 
 void insere_novo_proc() {
@@ -515,10 +583,8 @@ void insere_novo_proc() {
    novo_simb.nivel_lexico = ++nivel_lexico;
    
    novo_simb.atrib_vars = (procedimento_t *)malloc(sizeof(procedimento_t));
-   if(!novo_simb.atrib_vars) {
-      fprintf(stderr, "erro de alocacao de memoria!\n");
-      exit(-1);
-   }
+   if(!novo_simb.atrib_vars)
+      imprimeErro("erro de alocacao de memoria");
 
    procedimento_t *atrib = novo_simb.atrib_vars;
    sprintf(atrib->rot_interno, "R%02i", num_rot);
@@ -526,6 +592,7 @@ void insere_novo_proc() {
    atrib->params = NULL;
 
    insere_ts(&ts, &novo_simb);
+   indice_proc = ts.topo;
 
    empilha(&pil_rot, num_rot);
    num_rot++;
@@ -539,14 +606,19 @@ void read_var() {
 
    if(indice == -1)
       imprimeErro("variavel nao declarada");
-
-   if(ts.tabela[indice].categoria != simples)
+    
+   int deslocamento;
+   if(ts.tabela[indice].categoria == simples) {
+      var_simples_t *atrib = ts.tabela[indice].atrib_vars;
+      deslocamento = atrib->deslocamento;
+   } else if(ts.tabela[indice].categoria == param_formal) {
+      param_formal_t *atrib = ts.tabela[indice].atrib_vars;
+      deslocamento = atrib->deslocamento;
+   } else
       imprimeErro("categoria incompativel");
 
-   var_simples_t *atrib = ts.tabela[indice].atrib_vars;
-
    char armz[TAM_ID];
-   sprintf(armz, "ARMZ %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+   sprintf(armz, "ARMZ %i,%i", ts.tabela[indice].nivel_lexico, deslocamento);
 
    geraCodigo(NULL, armz);
 }

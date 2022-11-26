@@ -58,21 +58,25 @@ void retira_ts(tab_simb_t *ts, int n) {
 }
 
 void imprime_ts(tab_simb_t *ts) {
-
+    printf("\n");
     for(int i = 0; i <= ts->topo; i++) {
-        printf("id: %s | cat: %i | nivel_l: %i | ", 
+        printf("%s \t %i \t %i \t ", 
         ts->tabela[i].id, (int)ts->tabela[i].categoria, ts->tabela[i].nivel_lexico);
         
         if(ts->tabela[i].categoria == simples) {
             var_simples_t *atrib = ts->tabela[i].atrib_vars;
-            printf("tipo: %i | desloc: %i\n", atrib->tipo, atrib->deslocamento);
+            printf("tipo: %i \t desloc: %i\n", atrib->tipo, atrib->deslocamento);
+        }else if(ts->tabela[i].categoria == param_formal) {
+            param_formal_t *atrib = ts->tabela[i].atrib_vars;
+            printf("tipo: %i \t desloc: %i \t pass: %i\n", atrib->tipo, atrib->deslocamento, atrib->passagem);
         }
         else if(ts->tabela[i].categoria == procedimento) {
             procedimento_t *atrib = ts->tabela[i].atrib_vars;
-            printf("rot.: %s | num. params: %i |", atrib->rot_interno, atrib->n_params);
+            printf("rot: %s \t num. params: %i \t{ ", atrib->rot_interno, atrib->n_params);
             for(int j = 0; j < atrib->n_params; j++)
-                printf(" tipo: %i , pass.: %i |", atrib->params->tipo, atrib->params->passagem);
-            printf("\n");
+                printf("(tipo: %i , pass: %i)", atrib->params[j].tipo, atrib->params[j].passagem);
+            printf(" }\n");
         }
     }
+    printf("\n");
 }
