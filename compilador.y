@@ -9,8 +9,10 @@
 pilha_t pil_tipo, pil_rot;
 char idr[TAM_ID];
 int num_rot = 0;
+int pass_ref;
 
 void insere_nova_var();
+void insere_novo_param();
 void insere_novo_proc();
 void read_var();
 void op_unaria(tipos tipo);
@@ -39,14 +41,10 @@ void verifica_tipo(tipos *t, int num_op);
 
 %%
 
-programa :  {
-               geraCodigo (NULL, "INPP");
-            }
+programa :  { geraCodigo (NULL, "INPP"); }
             PROGRAM IDENT ABRE_PARENTESES lista_idents FECHA_PARENTESES PONTO_E_VIRGULA
             bloco PONTO
-            {
-               geraCodigo (NULL, "PARA");
-            }
+            { geraCodigo (NULL, "PARA"); }
 ;
 
 bloco :  parte_declara_vars
@@ -92,9 +90,7 @@ declara_vars   :  declara_vars declara_var
                   | declara_var
 ;
 
-declara_var :  {
-                  num_vars_por_tipo = 0;
-               }
+declara_var :  { num_vars_por_tipo = 0; }
                lista_id_var DOIS_PONTOS tipo
                {
                   int i = ts.topo, j = num_vars_por_tipo;
@@ -108,24 +104,12 @@ declara_var :  {
                PONTO_E_VIRGULA
 ;
 
-tipo  :  INTEGER
-         {
-            tipo_corrente = inteiro;
-         } 
-         | BOOLEAN
-         {
-            tipo_corrente = booleano;
-         }
+tipo  :  INTEGER { tipo_corrente = inteiro; } 
+         | BOOLEAN { tipo_corrente = booleano; }
 ;
 
-lista_id_var   :  lista_id_var VIRGULA IDENT
-                  {
-                     insere_nova_var();
-                  } 
-                  | IDENT 
-                  {
-                     insere_nova_var();
-                  }
+lista_id_var   :  lista_id_var VIRGULA IDENT { insere_nova_var(); } 
+                  | IDENT { insere_nova_var(); }
 ;
 
 lista_idents   :  lista_idents VIRGULA IDENT 
@@ -189,15 +173,19 @@ param_formais  :  ABRE_PARENTESES secao_param FECHA_PARENTESES
                   |
 ;
 
-secao_param :  secao_param VIRGULA secao_param_formais
+secao_param :  secao_param PONTO_E_VIRGULA secao_param_formais
                | secao_param_formais
 ;
 
-secao_param_formais  :  var_opcional lista_id_var DOIS_PONTOS tipo
+secao_param_formais  :  var_opcional lista_id_param DOIS_PONTOS tipo
 ;
 
-var_opcional   :  VAR
-                  |
+var_opcional   :  VAR { pass_ref = 1; }
+                  | { pass_ref = 0; }
+;
+
+lista_id_param   :   lista_id_param VIRGULA IDENT { insere_novo_param(); } 
+                     | IDENT { insere_novo_param(); }
 ;
 
 comando_composto  :  T_BEGIN comandos T_END 
@@ -249,7 +237,7 @@ fatora   :  ATRIBUICAO
 
                char chpr[TAM_ID * 2];
                procedimento_t *atrib = ts.tabela[indice].atrib_vars;
-               sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, ts.tabela[indice].nivel_lexico);
+               sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
                geraCodigo(NULL, chpr);
             }
 ;
@@ -257,35 +245,17 @@ fatora   :  ATRIBUICAO
 leitura  :  READ ABRE_PARENTESES le_var FECHA_PARENTESES
 ;
 
-le_var   :  le_var VIRGULA IDENT
-            {
-               read_var();
-            } 
-            | IDENT
-            {
-               read_var();
-            }
+le_var   :  le_var VIRGULA IDENT { read_var(); } 
+            | IDENT { read_var(); }
 ;
 
 impressao   :  WRITE ABRE_PARENTESES impr_var_ou_num FECHA_PARENTESES
 ;
 
-impr_var_ou_num   :  impr_var_ou_num VIRGULA variavel
-                     {
-                        geraCodigo(NULL, "IMPR"); 
-                     } 
-                     | impr_var_ou_num VIRGULA numero 
-                     {
-                        geraCodigo(NULL, "IMPR"); 
-                     }
-                     | variavel 
-                     {
-                        geraCodigo(NULL, "IMPR"); 
-                     }
-                     | numero
-                     {
-                        geraCodigo(NULL, "IMPR"); 
-                     }
+impr_var_ou_num   :  impr_var_ou_num VIRGULA variavel { geraCodigo(NULL, "IMPR"); } 
+                     | impr_var_ou_num VIRGULA numero { geraCodigo(NULL, "IMPR"); }
+                     | variavel { geraCodigo(NULL, "IMPR"); }
+                     | numero { geraCodigo(NULL, "IMPR"); }
 ;
 
 comando_repetitivo   :  WHILE
@@ -531,6 +501,10 @@ void insere_nova_var() {
    insere_ts(&ts, &novo_simb);
 
    num_vars++; num_vars_por_tipo++;
+}
+
+void insere_novo_param() {
+
 }
 
 void insere_novo_proc() {
