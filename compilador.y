@@ -6,7 +6,7 @@
 #include <string.h>
 #include "compilador.h"
 
-#define DEPURACAO
+// #define DEPURACAO
 
 pilha_t pil_tipo, pil_rot;
 char idr[TAM_ID];
@@ -91,15 +91,6 @@ parte_declara_vars   :  { num_vars = 0; }
                            char amem_k[TAM_ID];
                            sprintf(amem_k, "AMEM %i", num_vars);
                            geraCodigo(NULL, amem_k);
-
-                           #ifdef DEPURACAO
-                              printf("\e[1;1H\e[2J");
-                              printf("\033[0;32m");
-                              printf("alocado:\n");
-                              printf("\033[0m");
-                              imprime_ts(&ts);
-                              getchar();
-                           #endif
                         } |
 ; 
 
@@ -214,6 +205,15 @@ param_formais  :  { num_params = 0; }
 
                         i--; j--;
                      }
+
+                     #ifdef DEPURACAO
+                        printf("\e[1;1H\e[2J");
+                        printf("\033[0;32m");
+                        printf("alocado:\n");
+                        printf("\033[0m");
+                        imprime_ts(&ts);
+                        getchar();
+                     #endif
                   }
                   |
 ;
@@ -595,6 +595,15 @@ void insere_nova_var() {
    insere_ts(&ts, &novo_simb);
 
    num_vars++; num_vars_por_tipo++;
+
+   #ifdef DEPURACAO
+      printf("\e[1;1H\e[2J");
+      printf("\033[0;32m");
+      printf("alocado:\n");
+      printf("\033[0m");
+      imprime_ts(&ts);
+      getchar();
+   #endif
 }
 
 void insere_novo_param() {
@@ -641,6 +650,15 @@ void insere_novo_proc() {
 
    empilha(&pil_rot, num_rot);
    num_rot++;
+
+   #ifdef DEPURACAO
+      printf("\e[1;1H\e[2J");
+      printf("\033[0;32m");
+      printf("alocado:\n");
+      printf("\033[0m");
+      imprime_ts(&ts);
+      getchar();
+   #endif
 }
 
 void read_var() {
