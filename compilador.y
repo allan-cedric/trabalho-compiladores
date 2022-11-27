@@ -250,8 +250,8 @@ comando_composto  :  T_BEGIN comandos T_END
                      | T_BEGIN T_END
 ;
 
-comandos :  comandos comando PONTO_E_VIRGULA 
-            | comando PONTO_E_VIRGULA
+comandos :  comandos PONTO_E_VIRGULA comando 
+            | comando
 ;
 
 comando  :  comando_sem_rotulo
