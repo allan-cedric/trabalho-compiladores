@@ -33,5 +33,7 @@ void desempilha(pilha_t *p, int n) {
 
 int topo_pil(pilha_t *p) {
 
+    if(pil_vazia(p))
+        return -1;
     return p->pilha[p->topo];
 }

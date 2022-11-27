@@ -6,6 +6,8 @@
 #include <string.h>
 #include "compilador.h"
 
+#define DEPURACAO
+
 pilha_t pil_tipo, pil_rot;
 char idr[TAM_ID];
 int indice_proc;
@@ -70,10 +72,16 @@ bloco :  parte_declara_vars
                   sprintf(dmem, "DMEM %i", conta_simb);
                   geraCodigo(NULL, dmem);
 
-                  // printf("desalocado\n");
+                  #ifdef DEPURACAO
+                     printf("\e[1;1H\e[2J");
+                     printf("\033[0;31m");
+                     printf("desalocado:\n");
+                     printf("\033[0m");
+                     imprime_ts(&ts);
+                     getchar();
+                  #endif
                }
             }
-            // imprime_ts(&ts);
          }
 ;
 
@@ -84,8 +92,14 @@ parte_declara_vars   :  { num_vars = 0; }
                            sprintf(amem_k, "AMEM %i", num_vars);
                            geraCodigo(NULL, amem_k);
 
-                           // printf("alocado\n");
-                           // imprime_ts(&ts);
+                           #ifdef DEPURACAO
+                              printf("\e[1;1H\e[2J");
+                              printf("\033[0;32m");
+                              printf("alocado:\n");
+                              printf("\033[0m");
+                              imprime_ts(&ts);
+                              getchar();
+                           #endif
                         } |
 ; 
 
@@ -167,6 +181,15 @@ declara_procedimento :  PROCEDURE IDENT
                            desempilha(&pil_rot, 1);
                            retira_ts(&ts, atrib->n_params);
                            nivel_lexico--;
+
+                           #ifdef DEPURACAO
+                              printf("\e[1;1H\e[2J");
+                              printf("\033[0;31m");
+                              printf("desalocado:\n");
+                              printf("\033[0m");
+                              imprime_ts(&ts);
+                              getchar();
+                           #endif
                         }
 ;
 
@@ -185,9 +208,9 @@ param_formais  :  { num_params = 0; }
                         param_formal_t *a = ts.tabela[i].atrib_vars;
                         a->deslocamento = (j - num_params) - 4;
 
-                        atrib->params[i].tipo = a->tipo;
-                        atrib->params[i].deslocamento = a->deslocamento;
-                        atrib->params[i].passagem = a->passagem;
+                        atrib->params[j - 1].tipo = a->tipo;
+                        atrib->params[j - 1].deslocamento = a->deslocamento;
+                        atrib->params[j - 1].passagem = a->passagem;
 
                         i--; j--;
                      }
@@ -263,17 +286,19 @@ fatora   :  ATRIBUICAO
                   imprimeErro("categoria incompativel");
             }
             atribuicao
-            | chamada_procedimento
+            |
             {
-               int indice = busca_ts(&ts, idr);
+               indice_proc = busca_ts(&ts, idr);
 
-               if(indice == -1)
+               if(indice_proc == -1)
                   imprimeErro("procedimento nao declarado");
 
-               if(ts.tabela[indice].categoria != procedimento)
+               if(ts.tabela[indice_proc].categoria != procedimento)
                   imprimeErro("categoria incompativel");
-
-               procedimento_t *atrib = ts.tabela[indice].atrib_vars;
+            } 
+            chamada_procedimento
+            {
+               procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
 
                if(num_expr != atrib->n_params)
                   imprimeErro("qtd. errada de parametros");
@@ -372,8 +397,28 @@ chamada_procedimento :  lista_expressoes
 lista_expressoes  :  { num_expr = 0; } ABRE_PARENTESES lista_expressao FECHA_PARENTESES
 ;
 
-lista_expressao   :  lista_expressao VIRGULA expressao { num_expr++ ;}
-                     | expressao { num_expr++ ;}
+lista_expressao   :  lista_expressao VIRGULA expressao 
+                     {
+                        int tipo_expr = topo_pil(&pil_tipo); 
+                        desempilha(&pil_tipo, 1);
+
+                        procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                        if(tipo_expr != atrib->params[num_expr].tipo)
+                           imprimeErro("tipos incompativeis");
+
+                        num_expr++;
+                     }
+                     | expressao 
+                     { 
+                        int tipo_expr = topo_pil(&pil_tipo); 
+                        desempilha(&pil_tipo, 1);
+
+                        procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                        if(tipo_expr != atrib->params[num_expr].tipo)
+                           imprimeErro("tipos incompativeis");
+
+                        num_expr++;
+                     }
 ;
 
 atribuicao  :  expressao

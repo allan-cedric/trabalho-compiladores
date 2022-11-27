@@ -1,3 +1,4 @@
 #!/usr/bin/bash
 
-./compilador $1 && cat -n $1
+./compilador $1
+pr -mtn -w 120 teste1.pas MEPA
