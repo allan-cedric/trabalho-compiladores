@@ -57,11 +57,13 @@ bloco :  parte_declara_vars
          comando_composto
          {
             if(!ts_vazia(&ts)) {
-               int conta_simb = 0;
+               int conta_simb = 0, conta_local = 0;
                for(int i = ts.topo; i >= 0; i--) {
                   if(ts.tabela[i].nivel_lexico <= nivel_lexico && 
                      ts.tabela[i].categoria != simples)
                      break;
+                  if(ts.tabela[i].categoria == simples)
+                     conta_local++;
                   conta_simb++;
                }
 
@@ -69,7 +71,7 @@ bloco :  parte_declara_vars
                   retira_ts(&ts, conta_simb);
 
                   char dmem[TAM_ID];
-                  sprintf(dmem, "DMEM %i", conta_simb);
+                  sprintf(dmem, "DMEM %i", conta_local);
                   geraCodigo(NULL, dmem);
 
                   #ifdef DEPURACAO
