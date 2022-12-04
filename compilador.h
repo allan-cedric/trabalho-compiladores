@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TAM_TOKEN 16
+#define TAM_TOKEN 128
 
 typedef enum simbolos {
   simb_program, simb_var, simb_begin, simb_end,
