@@ -13,7 +13,7 @@
 #define IMPRIME(STR) {};
 //#define IMPRIME(STR) printf("%s    # %s \n", STR, token);
 
-void trata_token(simbolos simb, const char *str);
+void armz_token(simbolos simb, const char *str);
 
 %}
 
@@ -40,229 +40,229 @@ comentario_linha "//".*
 {comentario_linha}
 
 {numero} {
-  trata_token(simb_numero, " numero ");
+  armz_token(simb_numero, " numero ");
   return NUMERO;
 }
 
 program {
-  trata_token(simb_program, " program ");
+  armz_token(simb_program, " program ");
   return PROGRAM;
 }
 
 var {
-  trata_token(simb_var, " var ");
+  armz_token(simb_var, " var ");
   return VAR;
 }
 
 begin {
-  trata_token(simb_begin, " begin ");
+  armz_token(simb_begin, " begin ");
   return T_BEGIN;
 }
 
 end {
-  trata_token(simb_end, " end ");
+  armz_token(simb_end, " end ");
   return T_END;
 }
 
 := {
-  trata_token(simb_atribuicao, " atribuicao ");
+  armz_token(simb_atribuicao, " atribuicao ");
   return ATRIBUICAO;
 }
 
 \; {
-  trata_token(simb_ponto_e_virgula, " pt_virgula ");
+  armz_token(simb_ponto_e_virgula, " pt_virgula ");
   return PONTO_E_VIRGULA;
 }
 
 \: {
-  trata_token(simb_dois_pontos, " dois pontos ");
+  armz_token(simb_dois_pontos, " dois pontos ");
   return DOIS_PONTOS;
 }
 
 \, {
-  trata_token(simb_virgula, " virgula ");
+  armz_token(simb_virgula, " virgula ");
   return VIRGULA;
 }
 
 
 \. {
-  trata_token(simb_ponto, " ponto ");
+  armz_token(simb_ponto, " ponto ");
   return PONTO;
 }
 
 \( {
-  trata_token(simb_abre_parenteses, " abre_parenteses ");
+  armz_token(simb_abre_parenteses, " abre_parenteses ");
   return ABRE_PARENTESES;
 }
 
 \) {
-  trata_token(simb_fecha_parenteses, " fecha_parenteses ");
+  armz_token(simb_fecha_parenteses, " fecha_parenteses ");
   return FECHA_PARENTESES;
 }
 
 label {
-  trata_token(simb_label, " label ");
+  armz_token(simb_label, " label ");
   return LABEL;
 }
 
 type {
-  trata_token(simb_type, " type ");
+  armz_token(simb_type, " type ");
   return TYPE;
 }
 
 array {
-  trata_token(simb_array, " array ");
+  armz_token(simb_array, " array ");
   return ARRAY;
 }
 
 of {
-  trata_token(simb_of, " of ");
+  armz_token(simb_of, " of ");
   return OF;
 }
 
 procedure {
-  trata_token(simb_procedure, " procedure ");
+  armz_token(simb_procedure, " procedure ");
   return PROCEDURE;
 }
 
 function {
-  trata_token(simb_function, " function ");
+  armz_token(simb_function, " function ");
   return FUNCTION;
 }
 
 goto {
-  trata_token(simb_goto, " goto ");
+  armz_token(simb_goto, " goto ");
   return GOTO;
 }
 
 if {
-  trata_token(simb_if, " if ");
+  armz_token(simb_if, " if ");
   return IF;
 }
 
 then {
-  trata_token(simb_then, " then ");
+  armz_token(simb_then, " then ");
   return THEN;
 }
 
 else {
-  trata_token(simb_else, " else ");
+  armz_token(simb_else, " else ");
   return ELSE;
 }
 
 while {
-  trata_token(simb_while, " while ");
+  armz_token(simb_while, " while ");
   return WHILE;
 }
 
 do {
-  trata_token(simb_do, " do ");
+  armz_token(simb_do, " do ");
   return DO;
 }
 
 \= {
-  trata_token(simb_igual, " igual ");
+  armz_token(simb_igual, " igual ");
   return IGUAL;
 }
 
 \<\> {
-  trata_token(simb_diferente, " diferente ");
+  armz_token(simb_diferente, " diferente ");
   return DIFERENTE;
 }
 
 \< {
-  trata_token(simb_menor, " menor ");
+  armz_token(simb_menor, " menor ");
   return MENOR;
 }
 
 \<\= {
-  trata_token(simb_menor_igual, " menor igual ");
+  armz_token(simb_menor_igual, " menor igual ");
   return MENOR_IGUAL;
 }
 
 \>\= {
-  trata_token(simb_maior_igual, " maior igual ");
+  armz_token(simb_maior_igual, " maior igual ");
   return MAIOR_IGUAL;
 }
 
 \> {
-  trata_token(simb_maior, " maior ");
+  armz_token(simb_maior, " maior ");
   return MAIOR;
 }
 
 \+ {
-  trata_token(simb_mais, " mais ");
+  armz_token(simb_mais, " mais ");
   return MAIS;
 }
 
 \- {
-  trata_token(simb_menos, " menos ");
+  armz_token(simb_menos, " menos ");
   return MENOS;
 }
 
 \* {
-  trata_token(simb_vezes, " vezes ");
+  armz_token(simb_vezes, " vezes ");
   return VEZES;
 }
 
 div {
-  trata_token(simb_dividido, " dividido ");
+  armz_token(simb_dividido, " dividido ");
   return DIVIDIDO;
 }
 
 not {
-  trata_token(simb_not, " not ");
+  armz_token(simb_not, " not ");
   return NOT;
 }
 
 and {
-  trata_token(simb_and, " and ");
+  armz_token(simb_and, " and ");
   return AND;
 }
 
 or {
-  trata_token(simb_or, " or ");
+  armz_token(simb_or, " or ");
   return OR;
 }
 
 \[ {
-  trata_token(simb_abre_colchetes, " abre_colchetes ");
+  armz_token(simb_abre_colchetes, " abre_colchetes ");
   return ABRE_COLCHETES;
 }
 
 \] {
-  trata_token(simb_fecha_colchetes, " fecha_colchetes ");
+  armz_token(simb_fecha_colchetes, " fecha_colchetes ");
   return FECHA_COLCHETES;
 }
 
 integer {
-  trata_token(simb_integer, " integer ");
+  armz_token(simb_integer, " integer ");
   return INTEGER;
 }
 
 boolean {
-  trata_token(simb_boolean, " boolean ");
+  armz_token(simb_boolean, " boolean ");
   return BOOLEAN;
 }
 
 read {
-  trata_token(simb_read, " read ");
+  armz_token(simb_read, " read ");
   return READ;
 }
 
 write {
-  trata_token(simb_write, " write ");
+  armz_token(simb_write, " write ");
   return WRITE;
 }
 
 {ident} {
-  trata_token(simb_identificador, " ident ");
+  armz_token(simb_identificador, " ident ");
   return IDENT;
 }
 
 %%
 
-void trata_token(simbolos simb, const char *str) {
+void armz_token(simbolos simb, const char *str) {
 
   simbolo = simb;
   strncpy (token, yytext, TAM_TOKEN);
