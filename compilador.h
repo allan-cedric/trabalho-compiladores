@@ -40,7 +40,8 @@ typedef enum simbolos {
 typedef enum categorias {
   simples,
   param_formal,
-  procedimento
+  procedimento,
+  funcao
 } categorias;
 
 typedef enum tipos {
@@ -69,6 +70,13 @@ typedef struct procedimento_t {
   int n_params;
   param_formal_t *params;
 } procedimento_t;
+
+typedef struct funcao_t {
+  unsigned char rot_interno[TAM_ID];
+  int n_params;
+  param_formal_t *params;
+  tipos retorno;
+} funcao_t;
 
 typedef struct simb_t {
   unsigned char id[TAM_ID];

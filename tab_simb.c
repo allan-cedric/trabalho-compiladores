@@ -84,5 +84,12 @@ void imprime_ts(tab_simb_t *ts) {
                 printf("{tipo:%i, pass:%i} ", atrib->params[j].tipo, atrib->params[j].passagem);
             printf("]\n");
         }
+        else if(ts->tabela[i].categoria == funcao) {
+            funcao_t *atrib = ts->tabela[i].atrib_vars;
+            printf("rot:%-9s num.params:%-8i[ ", atrib->rot_interno, atrib->n_params);
+            for(int j = 0; j < atrib->n_params; j++)
+                printf("{tipo:%i, pass:%i} ", atrib->params[j].tipo, atrib->params[j].passagem);
+            printf("]\n");
+        }
     }
 }

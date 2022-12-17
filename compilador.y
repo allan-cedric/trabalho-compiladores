@@ -19,6 +19,7 @@ int num_rot = 0;
 void insere_nova_var();
 void insere_novo_param();
 void insere_novo_proc();
+void insere_nova_func();
 void read_var();
 void op_unaria(tipos tipo);
 void op_binaria(tipos tipo);
@@ -247,7 +248,46 @@ lista_id_param_formal   :  lista_id_param_formal VIRGULA IDENT { insere_novo_par
                            | IDENT { insere_novo_param(); }
 ;
 
-declara_funcao :
+declara_funcao :  FUNCTION IDENT
+                  {
+                     insere_nova_func();
+
+                     char enpr[TAM_ID];
+                     sprintf(enpr, "ENPR %i", ts.tabela[ts.topo].nivel_lexico);
+                     funcao_t *atrib = ts.tabela[ts.topo].atrib_vars;
+                     geraCodigo(atrib->rot_interno, enpr);
+                  }
+                  param_formais DOIS_PONTOS tipo
+                  { 
+                     funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                     atrib->retorno = tipo_corrente;
+                  }
+                  PONTO_E_VIRGULA bloco
+                  {
+                     int i;
+                     for(i = ts.topo; i >= 0; i--) {
+                        if(ts.tabela[i].categoria == funcao &&
+                           ts.tabela[i].nivel_lexico == nivel_lexico)
+                           break;
+                     }
+
+                     char rtpr[TAM_ID];
+                     funcao_t *atrib = ts.tabela[i].atrib_vars;
+                     sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
+                     geraCodigo(NULL, rtpr);
+                     desempilha(&pil_rot, 1);
+                     retira_ts(&ts, atrib->n_params);
+                     nivel_lexico--;
+
+                     #ifdef DEPURACAO
+                        printf("\e[1;1H\e[2J");
+                        printf("\033[0;31m");
+                        printf("desalocado:\n");
+                        printf("\033[0m");
+                        imprime_ts(&ts);
+                        getchar();
+                     #endif
+                  }
 ;
 
 comando_composto  :  T_BEGIN comandos T_END 
@@ -286,6 +326,23 @@ fatora   :  ATRIBUICAO
                } else if(ts.tabela[l_elem].categoria == param_formal) {
                   param_formal_t *atrib = ts.tabela[l_elem].atrib_vars;
                   empilha(&pil_tipo, atrib->tipo);
+               } else if(ts.tabela[l_elem].categoria == funcao){
+
+                  if(ts.tabela[l_elem].nivel_lexico != nivel_lexico)
+                     imprimeErro("variavel de acesso restrito");
+                  
+                  int i;
+                  for(i = ts.topo; i >= 0; i--) {
+                     if(ts.tabela[i].categoria == funcao &&
+                        ts.tabela[i].nivel_lexico == nivel_lexico)
+                        break;
+                  }
+
+                  if(i == -1 || strcmp(ts.tabela[i].id, idr))
+                     imprimeErro("variavel de acesso restrito");
+
+                  funcao_t *atrib = ts.tabela[l_elem].atrib_vars;
+                  empilha(&pil_tipo, atrib->retorno);
                } else
                   imprimeErro("categoria incompativel");
             }
@@ -328,9 +385,9 @@ le_var   :  le_var VIRGULA IDENT { read_var(); }
 impressao   :  WRITE ABRE_PARENTESES impr_var_ou_num FECHA_PARENTESES
 ;
 
-impr_var_ou_num   :  impr_var_ou_num VIRGULA variavel { geraCodigo(NULL, "IMPR"); } 
+impr_var_ou_num   :  impr_var_ou_num VIRGULA misc2 { geraCodigo(NULL, "IMPR"); } 
                      | impr_var_ou_num VIRGULA numero { geraCodigo(NULL, "IMPR"); }
-                     | variavel { geraCodigo(NULL, "IMPR"); }
+                     | misc2 { geraCodigo(NULL, "IMPR"); }
                      | numero { geraCodigo(NULL, "IMPR"); }
 ;
 
@@ -399,14 +456,12 @@ else  :  ELSE
          | %prec LOWER_THAN_ELSE
 ;
 
-chamada_procedimento :  lista_expressoes
+chamada_procedimento :  { num_expr = 0; }
+                        ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
                         | { num_expr = 0; }
 ;
 
-lista_expressoes  :  { num_expr = 0; } ABRE_PARENTESES lista_expressao FECHA_PARENTESES
-;
-
-lista_expressao   :  lista_expressao VIRGULA 
+lista_expressoes  :  lista_expressoes VIRGULA 
                      { empilha(&pil_expr, 0); }
                      expressao 
                      {
@@ -414,14 +469,22 @@ lista_expressao   :  lista_expressao VIRGULA
                         desempilha(&pil_tipo, 1);
 
                         indice_proc = topo_pil(&pil_proc);
-                        procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
 
-                        if(atrib->params[num_expr].passagem == referencia && 
+                        param_formal_t *params;
+                        if(ts.tabela[indice_proc].categoria == procedimento) {
+                           procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                           params = atrib->params;
+                        } else {
+                           funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                           params = atrib->params;
+                        }
+
+                        if(params[num_expr].passagem == referencia && 
                            topo_pil(&pil_expr) != 0)
                            imprimeErro("parametro real deve ser uma variavel simples");
 
-                        if(tipo_expr != atrib->params[num_expr].tipo)
-                           imprimeErro("tipos incompativeis");
+                        if(tipo_expr != params[num_expr].tipo)
+                           imprimeErro("tipos incompativeis - lista_expressoes");
 
                         desempilha(&pil_expr, 1);
                         num_expr++;
@@ -433,14 +496,22 @@ lista_expressao   :  lista_expressao VIRGULA
                         desempilha(&pil_tipo, 1);
 
                         indice_proc = topo_pil(&pil_proc);
-                        procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
 
-                        if(atrib->params[num_expr].passagem == referencia && 
+                        param_formal_t *params;
+                        if(ts.tabela[indice_proc].categoria == procedimento) {
+                           procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                           params = atrib->params;
+                        } else {
+                           funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
+                           params = atrib->params;
+                        }
+
+                        if(params[num_expr].passagem == referencia && 
                            topo_pil(&pil_expr) != 0)
                            imprimeErro("parametro real deve ser uma variavel simples");
 
-                        if(tipo_expr != atrib->params[num_expr].tipo)
-                           imprimeErro("tipos incompativeis");
+                        if(tipo_expr != params[num_expr].tipo)
+                           imprimeErro("tipos incompativeis - lista_expressoes");
 
                         desempilha(&pil_expr, 1);
                         num_expr++;
@@ -462,7 +533,11 @@ atribuicao  :  expressao
                         sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
                      else
                         sprintf(armz, "ARMI %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
-                  }
+                  }else if(ts.tabela[l_elem].categoria == funcao) {
+                     funcao_t *atrib = ts.tabela[l_elem].atrib_vars;
+                     sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, -(atrib->n_params + 4));
+                  }else
+                     imprimeErro("categoria incompativel");
 
                   geraCodigo(NULL, armz);
                   l_elem = -1;
@@ -480,7 +555,7 @@ expr_opcional  :  relacao expressao_simples
                      empilha(&pil_tipo, booleano);
 
                      if(t != inteiro && t != booleano)
-                        imprimeErro("tipos incompativeis");
+                        imprimeErro("tipos incompativeis - expr_opcional");
 
                      if(relacao == simb_igual)
                         geraCodigo(NULL, "CMIG");
@@ -496,7 +571,7 @@ expr_opcional  :  relacao expressao_simples
                         else if(relacao == simb_maior_igual)
                            geraCodigo(NULL, "CMAG");
                      }else
-                        imprimeErro("tipos incompativeis");
+                        imprimeErro("tipos incompativeis - expr_opcional");
 
                      pil_expr.pilha[pil_expr.topo] = 1;
                   } |
@@ -563,7 +638,7 @@ termo :  fator
          } 
 ;
 
-fator :  variavel 
+fator :  misc2 
          | numero { pil_expr.pilha[pil_expr.topo] = 1; } 
          | ABRE_PARENTESES expressao FECHA_PARENTESES 
          | NOT fator
@@ -574,14 +649,53 @@ fator :  variavel
          } 
 ;
 
-variavel :  IDENT
-            {
-               int indice = busca_ts(&ts, token);
+misc2 :  IDENT { strncpy(idr, token, strlen(token) + 1); } 
+         fatora2
+;
+
+fatora2  :  chamada_funcao_com_params
+            | variavel
+;
+
+chamada_funcao_com_params :   {
+                                 num_expr = 0;
+                                 indice_proc = busca_ts(&ts, idr);
+
+                                 if(indice_proc == -1)
+                                    imprimeErro("funcao nao declarada");
+
+                                 if(ts.tabela[indice_proc].categoria != funcao)
+                                    imprimeErro("categoria incompativel");
+                                 
+                                 empilha(&pil_proc, indice_proc);
+
+                                 geraCodigo(NULL, "AMEM 1");
+                              }  
+                              ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
+                              {
+                                 indice_proc = topo_pil(&pil_proc);
+                                 funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
+
+                                 if(num_expr != atrib->n_params)
+                                    imprimeErro("qtd. errada de parametros");
+
+                                 char chpr[TAM_ID * 2];
+                                 sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
+                                 geraCodigo(NULL, chpr);
+
+                                 empilha(&pil_tipo, atrib->retorno);
+
+                                 desempilha(&pil_proc, 1);
+                              }  
+;
+
+variavel :  {
+               int indice = busca_ts(&ts, idr);
 
                if(indice == -1)
-                  imprimeErro("variavel nao declarada");
+                  imprimeErro("funcao ou variavel nao declarada");
 
-               char crvl[TAM_ID];
+               char crvl[TAM_ID * 2];
                int tipo;
                
                if(ts.tabela[indice].categoria == simples) {
@@ -620,6 +734,11 @@ variavel :  IDENT
                      else
                         sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
                   }
+               } else if(ts.tabela[indice].categoria == funcao) {
+                  funcao_t *atrib = ts.tabela[indice].atrib_vars;
+                  tipo = atrib->retorno;
+                  sprintf(crvl, "CHPR %s,%i", atrib->rot_interno, ts.tabela[indice].nivel_lexico);
+                  geraCodigo(NULL, "AMEM 1");
                } else
                   imprimeErro("categoria incompativel");
 
@@ -735,6 +854,38 @@ void insere_novo_proc() {
    #endif
 }
 
+void insere_nova_func() {
+
+   simb_t novo_simb;
+   strncpy(novo_simb.id, token, strlen(token) + 1);
+   novo_simb.categoria = funcao;
+   novo_simb.nivel_lexico = ++nivel_lexico;
+   
+   novo_simb.atrib_vars = (funcao_t *)malloc(sizeof(funcao_t));
+   if(!novo_simb.atrib_vars)
+      imprimeErro("erro de alocacao de memoria");
+
+   funcao_t *atrib = novo_simb.atrib_vars;
+   sprintf(atrib->rot_interno, "R%02i", num_rot);
+   atrib->n_params = 0;
+   atrib->params = NULL;
+
+   insere_ts(&ts, &novo_simb);
+   indice_proc = ts.topo;
+
+   empilha(&pil_rot, num_rot);
+   num_rot++;
+
+   #ifdef DEPURACAO
+      printf("\e[1;1H\e[2J");
+      printf("\033[0;32m");
+      printf("alocado:\n");
+      printf("\033[0m");
+      imprime_ts(&ts);
+      getchar();
+   #endif
+}
+
 void read_var() {
 
    geraCodigo(NULL, "LEIT");
@@ -766,7 +917,7 @@ void op_unaria(tipos tipo) {
    verifica_tipo(&t, 1);
 
    if(t != tipo)
-      imprimeErro("tipos incompativeis");
+      imprimeErro("tipos incompativeis - op_unaria");
 }
 
 void op_binaria(tipos tipo) {
@@ -775,7 +926,7 @@ void op_binaria(tipos tipo) {
    verifica_tipo(&t, 2);
 
    if(t != tipo)
-      imprimeErro("tipos incompativeis");
+      imprimeErro("tipos incompativeis - op_binaria");
 }
 
 void verifica_tipo(tipos *t, int num_op) {
@@ -785,7 +936,7 @@ void verifica_tipo(tipos *t, int num_op) {
       tipos tipo_op2 = topo_pil(&pil_tipo);
 
       if(tipo_op1 != tipo_op2)
-         imprimeErro("tipos incompativeis");
+         imprimeErro("tipos incompativeis - verifica_tipo");
 
       *t = tipo_op1;
    }else if(num_op == 1) {
