@@ -1,21 +1,19 @@
-/* -------------------------------------------------------------------
- *            Arquivo: compilador.h
- * -------------------------------------------------------------------
- *              Autor: Bruno Muller Junior
- *               Data: 08/2007
- *      Atualizado em: [09/08/2020, 19h:01m]
- *
- * -------------------------------------------------------------------
- *
- * Tipos, protótipos e variáveis globais do compilador (via extern)
- *
- * ------------------------------------------------------------------- */
+/*
+  compilador.h: Header principal para o compilador
 
+  Autor: Allan Cedric G. B. Alves da Silva
+  Ultima modificacao: 17/12/2022
+*/
+
+#ifndef __COMPILADOR_H__
+#define __COMPILADOR_H__
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define TAM_TOKEN 128
+#define TAM_TOKEN 129
 
 typedef enum simbolos {
   simb_program, simb_var, simb_begin, simb_end,
@@ -97,34 +95,34 @@ typedef struct pilha_t {
   int pilha[TAM_MAX_PILHA];
 }pilha_t;
 
-
-/* -------------------------------------------------------------------
- * variáveis globais
- * ------------------------------------------------------------------- */
-
 extern simbolos simbolo, relacao;
-extern char token[TAM_TOKEN];
-extern int nivel_lexico;
-extern int nl;
-
+extern char token[TAM_TOKEN], idr[TAM_ID];
+extern int  nl, nivel_lexico,
+            num_vars, num_vars_por_tipo,
+            num_params, num_params_por_tipo,
+            l_elem, indice_proc, num_rot, num_expr,
+            pass_ref;
 extern tab_simb_t ts;
-extern int num_vars, num_vars_por_tipo;
 extern tipos tipo_corrente;
-extern int l_elem;
+extern pilha_t pil_tipo, pil_rot, pil_proc, pil_expr;
 
-
-/* -------------------------------------------------------------------
- * prototipos globais
- * ------------------------------------------------------------------- */
+// prototipos auxiliares para o compilador
 
 void geraCodigo (char*, char*);
 int yylex();
 void yyerror(const char *s);
 int imprimeErro (char* erro);
 
-/* -------------------------------------------------------------------
- * prototipos globais p/ manipular a tabela de simbolos
- * ------------------------------------------------------------------- */
+void insere_nova_var();
+void insere_novo_param();
+void insere_novo_proc();
+void insere_nova_func();
+void read_var();
+void op_unaria(tipos tipo);
+void op_binaria(tipos tipo);
+void verifica_tipo(tipos *t, int num_op);
+
+// prototipos para manipulacao de uma tabela de simbolos
 
 void inicializa_ts(tab_simb_t *ts);
 int ts_vazia(tab_simb_t *ts);
@@ -134,9 +132,7 @@ int busca_ts(tab_simb_t *ts, const unsigned char *id);
 void retira_ts(tab_simb_t *ts, int n);
 void imprime_ts(tab_simb_t *ts);
 
-/* -------------------------------------------------------------------
- * prototipos globais p/ manipular uma pilha de indices
- * ------------------------------------------------------------------- */
+// prototipos para manipulacao de uma pilha simples de inteiros
 
 void inicializa_pil(pilha_t *p);
 int pil_vazia(pilha_t *p);
@@ -144,3 +140,5 @@ int tamanho_pil(pilha_t *p);
 void empilha(pilha_t *p, int t);
 void desempilha(pilha_t *p, int n);
 int topo_pil(pilha_t *p);
+
+#endif
