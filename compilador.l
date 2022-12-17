@@ -1,29 +1,17 @@
+/*
+  compilador.l: Definicao de um subconjunto da linguagem pascal
 
-/* -------------------------------------------------------------------
- *            Arquivo: compilador.l
- * -------------------------------------------------------------------
- *              Autor: Bruno Muller Junior
- *               Data: 08/2007
- *      Atualizado em: [09/08/2020, 19h:01m]
- *
- * -------------------------------------------------------------------
- *
- * Tipos, protótipos e variáveis globais do compilador (via extern)
- *
- * ------------------------------------------------------------------- */
+  Autor: Allan Cedric G. B. Alves da Silva
+  Ultima modificacao: 17/12/2022 
+*/
 
 %{
-
-#include <stdio.h>
-#include <string.h>
 
 #include "compilador.h"
 #include "compilador.tab.h"
 
 #define IMPRIME(STR) {};
 //#define IMPRIME(STR) printf("%s    # %s \n", STR, token);
-
-int nl = 1;
 
 void trata_token(simbolos simb, const char *str);
 
