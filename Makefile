@@ -1,14 +1,15 @@
- # -------------------------------------------------------------------
- #            Arquivo: Makefile
- # -------------------------------------------------------------------
- #              Autor: Bruno Müller Junior
- #               Data: 08/2007
- #      Atualizado em: [09/08/2020, 19h:01m]
- #
- # -------------------------------------------------------------------
+# Makefile: build do programa
+
+# Autor: Allan Cedric G. B. Alves da Silva
+# Ultima modificacao: 17/12/2022
 
 CC=gcc
-$DEPURA=1
+
+all: clean compilador
+
+debug: clean flags compilador
+flags:
+	$(eval CFLAGS += -DDEPURACAO)
 
 compilador: lex.yy.c compilador.tab.c compiladorF.o tab_simb.o pilha.o compilador.h
 	gcc lex.yy.c compilador.tab.c compiladorF.o tab_simb.o pilha.o -o compilador -ll -ly -lc
