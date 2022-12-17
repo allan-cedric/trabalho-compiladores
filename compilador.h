@@ -113,7 +113,13 @@ int yylex();
 void yyerror(const char *s);
 int imprimeErro (char* erro);
 
+void desaloca_bloco();
+void aloca_vars();
+void carrega_tipo_vars();
 void insere_nova_var();
+void desvia_subrotina();
+void alvo_desvia_subrotina();
+
 void insere_novo_param();
 void insere_novo_proc();
 void insere_nova_func();
