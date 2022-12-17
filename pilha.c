@@ -1,3 +1,10 @@
+/*
+    pilha.c: Implementacao das operacoes sob uma pilha de inteiros
+
+    Autor: Allan Cedric G. B. Alves da Silva
+    Ultima modificacao: 17/12/2022
+*/
+
 #include "compilador.h"
 
 void inicializa_pil(pilha_t *p) {

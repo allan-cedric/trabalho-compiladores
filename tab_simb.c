@@ -1,11 +1,11 @@
+/*
+    tab_simb.c: Implementacao das operacoes sob uma tab. de simbolos
+
+    Autor: Allan Cedric G. B. Alves da Silva
+    Ultima modificacao: 17/12/2022
+*/
+
 #include "compilador.h"
-
-int nivel_lexico;
-
-int num_vars, num_vars_por_tipo;
-tab_simb_t ts;
-tipos tipo_corrente;
-int l_elem;
 
 void inicializa_ts(tab_simb_t *ts) {
 
@@ -47,6 +47,10 @@ void retira_ts(tab_simb_t *ts, int n) {
     while(!ts_vazia(ts) && n > 0) {
         if(ts->tabela[ts->topo].categoria == procedimento) {
             procedimento_t *atrib = ts->tabela[ts->topo].atrib_vars;
+            free(atrib->params);
+            atrib->params = NULL;
+        }else if(ts->tabela[ts->topo].categoria == funcao) {
+            funcao_t *atrib = ts->tabela[ts->topo].atrib_vars;
             free(atrib->params);
             atrib->params = NULL;
         }
