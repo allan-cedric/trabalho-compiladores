@@ -127,6 +127,34 @@ void finaliza_declara_params();
 void atualiza_tipo_params();
 
 void insere_nova_func();
+void insere_retorno_func();
+void finaliza_declara_func();
+
+void tipo_lado_esq_atrib();
+void armazena_lado_esq();
+
+void inicializa_cham_proc();
+void finaliza_cham_proc();
+
+void reserva_rotulos_ifelse();
+void transicao_ifelse();
+void finaliza_ifelse();
+
+void reserva_rotulos_while();
+void desvio_falso_while();
+void finaliza_while();
+
+void verifica_expressao();
+
+void finaliza_relacao();
+
+void carrega_variavel();
+
+void inicializa_cham_func();
+void finaliza_cham_func();
+
+void carrega_const();
+
 void read_var();
 void op_unaria(tipos tipo);
 void op_binaria(tipos tipo);

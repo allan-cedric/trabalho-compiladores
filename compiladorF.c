@@ -285,6 +285,10 @@ void insere_nova_func() {
    empilha(&pil_rot, num_rot);
    num_rot++;
 
+   char enpr[TAM_ID];
+   sprintf(enpr, "ENPR %i", nivel_lexico);
+   geraCodigo(atrib->rot_interno, enpr);
+
    #ifdef DEPURACAO
       printf("\e[1;1H\e[2J");
       printf("\033[0;32m");
@@ -293,6 +297,355 @@ void insere_nova_func() {
       imprime_ts(&ts);
       getchar();
    #endif
+}
+
+void insere_retorno_func()
+{
+   funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
+   atrib->retorno = tipo_corrente;
+}
+
+void finaliza_declara_func()
+{
+   int i;
+   for(i = ts.topo; i >= 0; i--) {
+      if(ts.tabela[i].categoria == funcao &&
+         ts.tabela[i].nivel_lexico == nivel_lexico)
+         break;
+   }
+
+   char rtpr[TAM_ID];
+   funcao_t *atrib = ts.tabela[i].atrib_vars;
+   sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
+   geraCodigo(NULL, rtpr);
+   desempilha(&pil_rot, 1);
+   retira_ts(&ts, atrib->n_params);
+   nivel_lexico--;
+
+   #ifdef DEPURACAO
+      printf("\e[1;1H\e[2J");
+      printf("\033[0;31m");
+      printf("desalocado:\n");
+      printf("\033[0m");
+      imprime_ts(&ts);
+      getchar();
+   #endif
+}
+
+void tipo_lado_esq_atrib()
+{
+   l_elem = busca_ts(&ts, idr);
+
+   if(l_elem == -1)
+      imprimeErro("variavel nao declarada");
+
+   if(ts.tabela[l_elem].categoria == simples) {
+      var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+      empilha(&pil_tipo, atrib->tipo);
+   } else if(ts.tabela[l_elem].categoria == param_formal) {
+      param_formal_t *atrib = ts.tabela[l_elem].atrib_vars;
+      empilha(&pil_tipo, atrib->tipo);
+   } else if(ts.tabela[l_elem].categoria == funcao){
+
+      if(ts.tabela[l_elem].nivel_lexico != nivel_lexico)
+         imprimeErro("variavel de acesso restrito");
+      
+      int i;
+      for(i = ts.topo; i >= 0; i--) {
+         if(ts.tabela[i].categoria == funcao &&
+            ts.tabela[i].nivel_lexico == nivel_lexico)
+            break;
+      }
+
+      if(i == -1 || strcmp(ts.tabela[i].id, idr))
+         imprimeErro("variavel de acesso restrito");
+
+      funcao_t *atrib = ts.tabela[l_elem].atrib_vars;
+      empilha(&pil_tipo, atrib->retorno);
+   } else
+      imprimeErro("categoria incompativel");
+}
+
+void armazena_lado_esq()
+{
+   tipos t;
+   verifica_tipo(&t, 2);
+
+   char armz[TAM_ID];
+   if(ts.tabela[l_elem].categoria == simples) {
+      var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+      sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+   }else if(ts.tabela[l_elem].categoria == param_formal) {
+      param_formal_t *atrib = ts.tabela[l_elem].atrib_vars;
+      if(atrib->passagem == valor)
+         sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+      else
+         sprintf(armz, "ARMI %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+   }else if(ts.tabela[l_elem].categoria == funcao) {
+      funcao_t *atrib = ts.tabela[l_elem].atrib_vars;
+      sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, -(atrib->n_params + 4));
+   }else
+      imprimeErro("categoria incompativel");
+
+   geraCodigo(NULL, armz);
+   l_elem = -1;
+}
+
+void inicializa_cham_proc()
+{
+   indice_proc = busca_ts(&ts, idr);
+
+   if(indice_proc == -1)
+      imprimeErro("procedimento nao declarado");
+
+   if(ts.tabela[indice_proc].categoria != procedimento)
+      imprimeErro("categoria incompativel");
+   
+   empilha(&pil_proc, indice_proc);
+}
+
+void finaliza_cham_proc()
+{
+   indice_proc = topo_pil(&pil_proc);
+   procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+
+   if(num_expr != atrib->n_params)
+      imprimeErro("qtd. errada de parametros");
+
+   char chpr[TAM_ID * 2];
+   sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
+   geraCodigo(NULL, chpr);
+
+   desempilha(&pil_proc, 1);
+}
+
+void reserva_rotulos_ifelse()
+{
+   char dsvf[TAM_ID];
+   sprintf(dsvf, "DSVF R%02i", num_rot);
+   empilha(&pil_rot, num_rot);
+   empilha(&pil_rot, num_rot + 1);
+   geraCodigo(NULL, dsvf);
+   num_rot += 2;
+}
+
+void transicao_ifelse()
+{
+   char dsvs[TAM_ID];
+   sprintf(dsvs, "DSVS R%02i", topo_pil(&pil_rot));
+   geraCodigo(NULL, dsvs);
+   
+   char rot[TAM_ID];
+   sprintf(rot, "R%02i", topo_pil(&pil_rot) - 1);
+   geraCodigo(rot, "NADA");
+}
+
+void finaliza_ifelse()
+{
+   char rot[TAM_ID];
+   sprintf(rot, "R%02i", topo_pil(&pil_rot));
+   geraCodigo(rot, "NADA");
+
+   desempilha(&pil_rot, 2);
+}
+
+void reserva_rotulos_while()
+{
+   char rot[TAM_ID];
+   sprintf(rot, "R%02i", num_rot);
+   empilha(&pil_rot, num_rot);
+   empilha(&pil_rot, num_rot + 1);
+   geraCodigo(rot, "NADA");
+   num_rot += 2;
+}
+
+void desvio_falso_while()
+{
+   char dsvf[TAM_ID];
+   sprintf(dsvf, "DSVF R%02i", topo_pil(&pil_rot));
+   geraCodigo(NULL, dsvf);
+}
+
+void finaliza_while()
+{
+   int rot_saida = topo_pil(&pil_rot); desempilha(&pil_rot, 1);
+   int rot_entrada = topo_pil(&pil_rot); desempilha(&pil_rot, 1);
+
+   char dsvs[TAM_ID];
+   sprintf(dsvs, "DSVS R%02i", rot_entrada);
+   geraCodigo(NULL, dsvs);
+
+   char rot[TAM_ID];
+   sprintf(rot, "R%02i", rot_saida);
+   geraCodigo(rot, "NADA");
+}
+
+void verifica_expressao()
+{
+   int tipo_expr = topo_pil(&pil_tipo); 
+   desempilha(&pil_tipo, 1);
+
+   indice_proc = topo_pil(&pil_proc);
+
+   param_formal_t *params;
+   if(ts.tabela[indice_proc].categoria == procedimento) {
+      procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+      params = atrib->params;
+   } else {
+      funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
+      params = atrib->params;
+   }
+
+   if(params[num_expr].passagem == referencia && 
+      topo_pil(&pil_expr) != 0)
+      imprimeErro("parametro real deve ser uma variavel simples");
+
+   if(tipo_expr != params[num_expr].tipo)
+      imprimeErro("tipos incompativeis - lista_expressoes");
+
+   desempilha(&pil_expr, 1);
+   num_expr++;
+}
+
+void finaliza_relacao()
+{
+   tipos t;
+   verifica_tipo(&t, 2);
+   desempilha(&pil_tipo, 1);
+   empilha(&pil_tipo, booleano);
+
+   if(t != inteiro && t != booleano)
+      imprimeErro("tipos incompativeis - expr_opcional");
+
+   if(relacao == simb_igual)
+      geraCodigo(NULL, "CMIG");
+   else if(relacao == simb_diferente)
+      geraCodigo(NULL, "CMDG");
+   else if(t != booleano) {
+      if(relacao == simb_menor)
+         geraCodigo(NULL, "CMME");
+      else if(relacao == simb_menor_igual)
+         geraCodigo(NULL, "CMEG");
+      else if(relacao == simb_maior)
+         geraCodigo(NULL, "CMMA");
+      else if(relacao == simb_maior_igual)
+         geraCodigo(NULL, "CMAG");
+   }else
+      imprimeErro("tipos incompativeis - expr_opcional");
+
+   pil_expr.pilha[pil_expr.topo] = 1;
+}
+
+void carrega_variavel()
+{
+   int indice = busca_ts(&ts, idr);
+
+   if(indice == -1)
+      imprimeErro("funcao ou variavel nao declarada");
+
+   char crvl[TAM_ID * 2];
+   int tipo;
+   
+   if(ts.tabela[indice].categoria == simples) {
+      var_simples_t *atrib = ts.tabela[indice].atrib_vars;
+      tipo = atrib->tipo;
+      indice_proc = topo_pil(&pil_proc);
+
+      if(indice_proc == -1)
+         sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+      else {
+         procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
+
+         if(atrib_proc->params[num_expr].passagem == valor)
+            sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+         else
+            sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+      }
+   } else if(ts.tabela[indice].categoria == param_formal) {
+      param_formal_t *atrib = ts.tabela[indice].atrib_vars;
+      tipo = atrib->tipo;
+      indice_proc = topo_pil(&pil_proc);
+
+      if(indice_proc == -1) {
+         if(atrib->passagem == valor)  
+            sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+         else
+            sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+      }
+      else {
+         procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
+
+         if(atrib_proc->params[num_expr].passagem == atrib->passagem)
+            sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+         else if(atrib_proc->params[num_expr].passagem == referencia)
+            sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+         else
+            sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+      }
+   } else if(ts.tabela[indice].categoria == funcao) {
+      funcao_t *atrib = ts.tabela[indice].atrib_vars;
+      tipo = atrib->retorno;
+      sprintf(crvl, "CHPR %s,%i", atrib->rot_interno, ts.tabela[indice].nivel_lexico);
+      geraCodigo(NULL, "AMEM 1");
+   } else
+      imprimeErro("categoria incompativel");
+
+   empilha(&pil_tipo, tipo);
+   geraCodigo(NULL, crvl);
+}
+
+void inicializa_cham_func()
+{
+   num_expr = 0;
+   indice_proc = busca_ts(&ts, idr);
+
+   if(indice_proc == -1)
+      imprimeErro("funcao nao declarada");
+
+   if(ts.tabela[indice_proc].categoria != funcao)
+      imprimeErro("categoria incompativel");
+   
+   empilha(&pil_proc, indice_proc);
+
+   geraCodigo(NULL, "AMEM 1");
+}
+
+void finaliza_cham_func()
+{
+   indice_proc = topo_pil(&pil_proc);
+   funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
+
+   if(num_expr != atrib->n_params)
+      imprimeErro("qtd. errada de parametros");
+
+   char chpr[TAM_ID * 2];
+   sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
+   geraCodigo(NULL, chpr);
+
+   empilha(&pil_tipo, atrib->retorno);
+
+   desempilha(&pil_proc, 1);
+}
+
+void carrega_const()
+{
+   int eh_booleano = 0;
+   if(l_elem != -1) {
+      var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
+      if(atrib->tipo == booleano) {
+         if(!strcmp(token, "0") || !strcmp(token, "1"))
+            eh_booleano = 1;
+      }
+   }
+
+   if(eh_booleano)
+      empilha(&pil_tipo, booleano);
+   else
+      empilha(&pil_tipo, inteiro);
+
+   char crct[TAM_ID];
+   sprintf(crct, "CRCT %s", token);
+   geraCodigo(NULL, crct);
 }
 
 void read_var() {

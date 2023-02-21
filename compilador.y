@@ -96,6 +96,15 @@ declara_procedimento :  PROCEDURE IDENT
                         { finaliza_declara_proc(); }
 ;
 
+// 13. regra declaracao de funcao
+declara_funcao :  FUNCTION IDENT
+                  { insere_nova_func(); }
+                  param_formais DOIS_PONTOS tipo
+                  { insere_retorno_func(); }
+                  PONTO_E_VIRGULA bloco
+                  { finaliza_declara_func(); }
+;
+
 // 14. regra parametros formais
 param_formais  :  { num_params = 0; }
                   ABRE_PARENTESES secao_param FECHA_PARENTESES
@@ -121,48 +130,7 @@ lista_id_param_formal   :  lista_id_param_formal VIRGULA IDENT { insere_novo_par
                            | IDENT { insere_novo_param(); }
 ;
 
-declara_funcao :  FUNCTION IDENT
-                  {
-                     insere_nova_func();
-
-                     char enpr[TAM_ID];
-                     sprintf(enpr, "ENPR %i", ts.tabela[ts.topo].nivel_lexico);
-                     funcao_t *atrib = ts.tabela[ts.topo].atrib_vars;
-                     geraCodigo(atrib->rot_interno, enpr);
-                  }
-                  param_formais DOIS_PONTOS tipo
-                  { 
-                     funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
-                     atrib->retorno = tipo_corrente;
-                  }
-                  PONTO_E_VIRGULA bloco
-                  {
-                     int i;
-                     for(i = ts.topo; i >= 0; i--) {
-                        if(ts.tabela[i].categoria == funcao &&
-                           ts.tabela[i].nivel_lexico == nivel_lexico)
-                           break;
-                     }
-
-                     char rtpr[TAM_ID];
-                     funcao_t *atrib = ts.tabela[i].atrib_vars;
-                     sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
-                     geraCodigo(NULL, rtpr);
-                     desempilha(&pil_rot, 1);
-                     retira_ts(&ts, atrib->n_params);
-                     nivel_lexico--;
-
-                     #ifdef DEPURACAO
-                        printf("\e[1;1H\e[2J");
-                        printf("\033[0;31m");
-                        printf("desalocado:\n");
-                        printf("\033[0m");
-                        imprime_ts(&ts);
-                        getchar();
-                     #endif
-                  }
-;
-
+// 16. regra comando composto
 comando_composto  :  T_BEGIN comandos T_END 
                      | T_BEGIN T_END
 ;
@@ -171,9 +139,11 @@ comandos :  comandos PONTO_E_VIRGULA comando
             | comando
 ;
 
+// 17. regra comando
 comando  :  comando_sem_rotulo
 ;
 
+// 18. regra comando sem rotulo
 comando_sem_rotulo   :  misc 
                         | comando_repetitivo 
                         | leitura 
@@ -182,272 +152,73 @@ comando_sem_rotulo   :  misc
                         | comando_condicional
 ;
 
+// fatoracao para as regras 19 e 20
 misc  :  IDENT { strncpy(idr, token, strlen(token) + 1); } 
          fatora
 ;
 
 fatora   :  ATRIBUICAO
-            {
-               l_elem = busca_ts(&ts, idr);
-
-               if(l_elem == -1)
-                  imprimeErro("variavel nao declarada");
-
-               if(ts.tabela[l_elem].categoria == simples) {
-                  var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
-                  empilha(&pil_tipo, atrib->tipo);
-               } else if(ts.tabela[l_elem].categoria == param_formal) {
-                  param_formal_t *atrib = ts.tabela[l_elem].atrib_vars;
-                  empilha(&pil_tipo, atrib->tipo);
-               } else if(ts.tabela[l_elem].categoria == funcao){
-
-                  if(ts.tabela[l_elem].nivel_lexico != nivel_lexico)
-                     imprimeErro("variavel de acesso restrito");
-                  
-                  int i;
-                  for(i = ts.topo; i >= 0; i--) {
-                     if(ts.tabela[i].categoria == funcao &&
-                        ts.tabela[i].nivel_lexico == nivel_lexico)
-                        break;
-                  }
-
-                  if(i == -1 || strcmp(ts.tabela[i].id, idr))
-                     imprimeErro("variavel de acesso restrito");
-
-                  funcao_t *atrib = ts.tabela[l_elem].atrib_vars;
-                  empilha(&pil_tipo, atrib->retorno);
-               } else
-                  imprimeErro("categoria incompativel");
-            }
+            { tipo_lado_esq_atrib(); }
             atribuicao
             |
-            {
-               indice_proc = busca_ts(&ts, idr);
-
-               if(indice_proc == -1)
-                  imprimeErro("procedimento nao declarado");
-
-               if(ts.tabela[indice_proc].categoria != procedimento)
-                  imprimeErro("categoria incompativel");
-               
-               empilha(&pil_proc, indice_proc);
-            } 
+            { inicializa_cham_proc(); } 
             chamada_procedimento
-            {
-               indice_proc = topo_pil(&pil_proc);
-               procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
-
-               if(num_expr != atrib->n_params)
-                  imprimeErro("qtd. errada de parametros");
-
-               char chpr[TAM_ID * 2];
-               sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
-               geraCodigo(NULL, chpr);
-
-               desempilha(&pil_proc, 1);
-            }
+            { finaliza_cham_proc(); }
 ;
 
-leitura  :  READ ABRE_PARENTESES le_var FECHA_PARENTESES
+// 19. regra atribuicao
+atribuicao  :  expressao
+               { armazena_lado_esq(); }
 ;
 
-le_var   :  le_var VIRGULA IDENT { read_var(); } 
-            | IDENT { read_var(); }
+// 20. regra chamada de procedimento
+chamada_procedimento :  { num_expr = 0; }
+                        ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
+                        | { num_expr = 0; }
 ;
 
-impressao   :  WRITE ABRE_PARENTESES impr_var_ou_num FECHA_PARENTESES
-;
-
-impr_var_ou_num   :  impr_var_ou_num VIRGULA misc2 { geraCodigo(NULL, "IMPR"); } 
-                     | impr_var_ou_num VIRGULA numero { geraCodigo(NULL, "IMPR"); }
-                     | misc2 { geraCodigo(NULL, "IMPR"); }
-                     | numero { geraCodigo(NULL, "IMPR"); }
-;
-
-comando_repetitivo   :  WHILE
-                        {
-                           char rot[TAM_ID];
-                           sprintf(rot, "R%02i", num_rot);
-                           empilha(&pil_rot, num_rot);
-                           empilha(&pil_rot, num_rot + 1);
-                           geraCodigo(rot, "NADA");
-                           num_rot += 2;
-                        }
-                        expressao
-                        {
-                           char dsvf[TAM_ID];
-                           sprintf(dsvf, "DSVF R%02i", topo_pil(&pil_rot));
-                           geraCodigo(NULL, dsvf);
-                        } 
-                        DO comando_sem_rotulo
-                        {
-                           int rot_saida = topo_pil(&pil_rot); desempilha(&pil_rot, 1);
-                           int rot_entrada = topo_pil(&pil_rot); desempilha(&pil_rot, 1);
-
-                           char dsvs[TAM_ID];
-                           sprintf(dsvs, "DSVS R%02i", rot_entrada);
-                           geraCodigo(NULL, dsvs);
-
-                           char rot[TAM_ID];
-                           sprintf(rot, "R%02i", rot_saida);
-                           geraCodigo(rot, "NADA");
-                        }
-;
-
+// 22. regra comando condicional
 comando_condicional  :  IF expressao
-                        {
-                           char dsvf[TAM_ID];
-                           sprintf(dsvf, "DSVF R%02i", num_rot);
-                           empilha(&pil_rot, num_rot);
-                           empilha(&pil_rot, num_rot + 1);
-                           geraCodigo(NULL, dsvf);
-                           num_rot += 2;
-                        }
+                        { reserva_rotulos_ifelse(); }
                         THEN comando_sem_rotulo 
-                        {
-                           char dsvs[TAM_ID];
-                           sprintf(dsvs, "DSVS R%02i", topo_pil(&pil_rot));
-                           geraCodigo(NULL, dsvs);
-                           
-                           char rot[TAM_ID];
-                           sprintf(rot, "R%02i", topo_pil(&pil_rot) - 1);
-                           geraCodigo(rot, "NADA");
-                        }
+                        { transicao_ifelse(); }
                         else
-                        {
-                           char rot[TAM_ID];
-                           sprintf(rot, "R%02i", topo_pil(&pil_rot));
-                           geraCodigo(rot, "NADA");
-
-                           desempilha(&pil_rot, 2);
-                        }
+                        { finaliza_ifelse(); }
 ;
 
 else  :  ELSE comando_sem_rotulo
          | %prec LOWER_THAN_ELSE
 ;
 
-chamada_procedimento :  { num_expr = 0; }
-                        ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
-                        | { num_expr = 0; }
+// 23. regra comando repetitivo
+comando_repetitivo   :  WHILE
+                        { reserva_rotulos_while(); }
+                        expressao
+                        { desvio_falso_while(); } 
+                        DO comando_sem_rotulo
+                        { finaliza_while(); }
 ;
 
+// 24. regra lista de expressoes
 lista_expressoes  :  lista_expressoes VIRGULA 
                      { empilha(&pil_expr, 0); }
                      expressao 
-                     {
-                        int tipo_expr = topo_pil(&pil_tipo); 
-                        desempilha(&pil_tipo, 1);
-
-                        indice_proc = topo_pil(&pil_proc);
-
-                        param_formal_t *params;
-                        if(ts.tabela[indice_proc].categoria == procedimento) {
-                           procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
-                           params = atrib->params;
-                        } else {
-                           funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
-                           params = atrib->params;
-                        }
-
-                        if(params[num_expr].passagem == referencia && 
-                           topo_pil(&pil_expr) != 0)
-                           imprimeErro("parametro real deve ser uma variavel simples");
-
-                        if(tipo_expr != params[num_expr].tipo)
-                           imprimeErro("tipos incompativeis - lista_expressoes");
-
-                        desempilha(&pil_expr, 1);
-                        num_expr++;
-                     }
+                     { verifica_expressao(); }
                      | { empilha(&pil_expr, 0); } 
                      expressao 
-                     { 
-                        int tipo_expr = topo_pil(&pil_tipo); 
-                        desempilha(&pil_tipo, 1);
-
-                        indice_proc = topo_pil(&pil_proc);
-
-                        param_formal_t *params;
-                        if(ts.tabela[indice_proc].categoria == procedimento) {
-                           procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
-                           params = atrib->params;
-                        } else {
-                           funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
-                           params = atrib->params;
-                        }
-
-                        if(params[num_expr].passagem == referencia && 
-                           topo_pil(&pil_expr) != 0)
-                           imprimeErro("parametro real deve ser uma variavel simples");
-
-                        if(tipo_expr != params[num_expr].tipo)
-                           imprimeErro("tipos incompativeis - lista_expressoes");
-
-                        desempilha(&pil_expr, 1);
-                        num_expr++;
-                     }
+                     { verifica_expressao(); }
 ;
 
-atribuicao  :  expressao
-               {
-                  tipos t;
-                  verifica_tipo(&t, 2);
-
-                  char armz[TAM_ID];
-                  if(ts.tabela[l_elem].categoria == simples) {
-                     var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
-                     sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
-                  }else if(ts.tabela[l_elem].categoria == param_formal) {
-                     param_formal_t *atrib = ts.tabela[l_elem].atrib_vars;
-                     if(atrib->passagem == valor)
-                        sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
-                     else
-                        sprintf(armz, "ARMI %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
-                  }else if(ts.tabela[l_elem].categoria == funcao) {
-                     funcao_t *atrib = ts.tabela[l_elem].atrib_vars;
-                     sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, -(atrib->n_params + 4));
-                  }else
-                     imprimeErro("categoria incompativel");
-
-                  geraCodigo(NULL, armz);
-                  l_elem = -1;
-               }
-;
-
+// 25. regra expressao
 expressao   : expressao_simples expr_opcional
 ;
 
 expr_opcional  :  relacao expressao_simples
-                  {
-                     tipos t;
-                     verifica_tipo(&t, 2);
-                     desempilha(&pil_tipo, 1);
-                     empilha(&pil_tipo, booleano);
-
-                     if(t != inteiro && t != booleano)
-                        imprimeErro("tipos incompativeis - expr_opcional");
-
-                     if(relacao == simb_igual)
-                        geraCodigo(NULL, "CMIG");
-                     else if(relacao == simb_diferente)
-                        geraCodigo(NULL, "CMDG");
-                     else if(t != booleano) {
-                        if(relacao == simb_menor)
-                           geraCodigo(NULL, "CMME");
-                        else if(relacao == simb_menor_igual)
-                           geraCodigo(NULL, "CMEG");
-                        else if(relacao == simb_maior)
-                           geraCodigo(NULL, "CMMA");
-                        else if(relacao == simb_maior_igual)
-                           geraCodigo(NULL, "CMAG");
-                     }else
-                        imprimeErro("tipos incompativeis - expr_opcional");
-
-                     pil_expr.pilha[pil_expr.topo] = 1;
-                  } |
+                  { finaliza_relacao(); } 
+                  |
 ;
 
+// 26. regra relacao
 relacao  :  IGUAL { relacao = simb_igual; } 
             | DIFERENTE { relacao = simb_diferente; } 
             | MENOR { relacao = simb_menor; } 
@@ -456,6 +227,7 @@ relacao  :  IGUAL { relacao = simb_igual; }
             | MAIOR { relacao = simb_maior; } 
 ;
 
+// 27. regra expressao simples
 expressao_simples :  termo 
                      | MAIS termo 
                      { 
@@ -488,6 +260,7 @@ expressao_simples :  termo
                      } 
 ;
 
+// 28. regra termo
 termo :  fator 
          | termo VEZES fator 
          {
@@ -509,6 +282,7 @@ termo :  fator
          } 
 ;
 
+// 29. regra fator
 fator :  misc2 
          | numero { pil_expr.pilha[pil_expr.topo] = 1; } 
          | ABRE_PARENTESES expressao FECHA_PARENTESES 
@@ -520,6 +294,7 @@ fator :  misc2
          } 
 ;
 
+// fatoracao para as regras 30 e 31 
 misc2 :  IDENT { strncpy(idr, token, strlen(token) + 1); } 
          fatora2
 ;
@@ -528,116 +303,37 @@ fatora2  :  chamada_funcao_com_params
             | variavel
 ;
 
-chamada_funcao_com_params :   {
-                                 num_expr = 0;
-                                 indice_proc = busca_ts(&ts, idr);
+// 30. regra variavel *(inclui o caso de funcao sem parametros)
+variavel :  { carrega_variavel(); }
+;
 
-                                 if(indice_proc == -1)
-                                    imprimeErro("funcao nao declarada");
 
-                                 if(ts.tabela[indice_proc].categoria != funcao)
-                                    imprimeErro("categoria incompativel");
-                                 
-                                 empilha(&pil_proc, indice_proc);
-
-                                 geraCodigo(NULL, "AMEM 1");
-                              }  
+// 31. regra chamada de funcao
+chamada_funcao_com_params :   { inicializa_cham_func(); }  
                               ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
-                              {
-                                 indice_proc = topo_pil(&pil_proc);
-                                 funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
-
-                                 if(num_expr != atrib->n_params)
-                                    imprimeErro("qtd. errada de parametros");
-
-                                 char chpr[TAM_ID * 2];
-                                 sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
-                                 geraCodigo(NULL, chpr);
-
-                                 empilha(&pil_tipo, atrib->retorno);
-
-                                 desempilha(&pil_proc, 1);
-                              }  
+                              { finaliza_cham_func(); }  
 ;
 
-variavel :  {
-               int indice = busca_ts(&ts, idr);
-
-               if(indice == -1)
-                  imprimeErro("funcao ou variavel nao declarada");
-
-               char crvl[TAM_ID * 2];
-               int tipo;
-               
-               if(ts.tabela[indice].categoria == simples) {
-                  var_simples_t *atrib = ts.tabela[indice].atrib_vars;
-                  tipo = atrib->tipo;
-                  indice_proc = topo_pil(&pil_proc);
-
-                  if(indice_proc == -1)
-                     sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                  else {
-                     procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
-
-                     if(atrib_proc->params[num_expr].passagem == valor)
-                        sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                     else
-                        sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                  }
-               } else if(ts.tabela[indice].categoria == param_formal) {
-                  param_formal_t *atrib = ts.tabela[indice].atrib_vars;
-                  tipo = atrib->tipo;
-                  indice_proc = topo_pil(&pil_proc);
-
-                  if(indice_proc == -1) {
-                     if(atrib->passagem == valor)  
-                        sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                     else
-                        sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                  }
-                  else {
-                     procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
-
-                     if(atrib_proc->params[num_expr].passagem == atrib->passagem)
-                        sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                     else if(atrib_proc->params[num_expr].passagem == referencia)
-                        sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                     else
-                        sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-                  }
-               } else if(ts.tabela[indice].categoria == funcao) {
-                  funcao_t *atrib = ts.tabela[indice].atrib_vars;
-                  tipo = atrib->retorno;
-                  sprintf(crvl, "CHPR %s,%i", atrib->rot_interno, ts.tabela[indice].nivel_lexico);
-                  geraCodigo(NULL, "AMEM 1");
-               } else
-                  imprimeErro("categoria incompativel");
-
-               empilha(&pil_tipo, tipo);
-               geraCodigo(NULL, crvl);
-            }
+// 32. regra numero
+numero   :  NUMERO { carrega_const(); }
 ;
 
-numero   :  NUMERO
-            {
-               int eh_booleano = 0;
-               if(l_elem != -1) {
-                  var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
-                  if(atrib->tipo == booleano) {
-                     if(!strcmp(token, "0") || !strcmp(token, "1"))
-                        eh_booleano = 1;
-                  }
-               }
+// regra leitura
+leitura  :  READ ABRE_PARENTESES le_var FECHA_PARENTESES
+;
 
-               if(eh_booleano)
-                  empilha(&pil_tipo, booleano);
-               else
-                  empilha(&pil_tipo, inteiro);
+le_var   :  le_var VIRGULA IDENT { read_var(); } 
+            | IDENT { read_var(); }
+;
 
-               char crct[TAM_ID];
-               sprintf(crct, "CRCT %s", token);
-               geraCodigo(NULL, crct);
-            }
+// regra impressao
+impressao   :  WRITE ABRE_PARENTESES impr_var_ou_num FECHA_PARENTESES
+;
+
+impr_var_ou_num   :  impr_var_ou_num VIRGULA misc2 { geraCodigo(NULL, "IMPR"); } 
+                     | impr_var_ou_num VIRGULA numero { geraCodigo(NULL, "IMPR"); }
+                     | misc2 { geraCodigo(NULL, "IMPR"); }
+                     | numero { geraCodigo(NULL, "IMPR"); }
 ;
 
 %%
