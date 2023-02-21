@@ -80,7 +80,7 @@ void aloca_vars() {
    geraCodigo(NULL, amem_k);
 }
 
-void carrega_tipo_vars() {
+void atualiza_tipo_vars() {
 
    int i = ts.topo, j = num_vars_por_tipo;
    while(i >= 0 && j > 0)
@@ -137,33 +137,10 @@ void alvo_desvia_subrotina() {
    desempilha(&pil_rot, 1);
 }
 
-void insere_novo_param() {
-
-   simb_t novo_simb;
-   strncpy(novo_simb.id, token, strlen(token) + 1);
-   novo_simb.categoria = param_formal;
-   novo_simb.nivel_lexico = nivel_lexico;
-   
-   novo_simb.atrib_vars = (param_formal_t *)malloc(sizeof(param_formal_t));
-   if(!novo_simb.atrib_vars)
-      imprimeErro("erro de alocacao de memoria");
-
-   param_formal_t *atrib = novo_simb.atrib_vars;
-   if(pass_ref)
-      atrib->passagem = referencia;
-   else
-      atrib->passagem = valor;
-
-
-   insere_ts(&ts, &novo_simb);
-
-   num_params++; num_params_por_tipo++;
-}
-
 void insere_novo_proc() {
 
    simb_t novo_simb;
-   strncpy(novo_simb.id, token, strlen(token) + 1);
+   strncpy(novo_simb.id, token,  TAM_ID);
    novo_simb.categoria = procedimento;
    novo_simb.nivel_lexico = ++nivel_lexico;
    
@@ -182,6 +159,10 @@ void insere_novo_proc() {
    empilha(&pil_rot, num_rot);
    num_rot++;
 
+   char enpr[TAM_ID];
+   sprintf(enpr, "ENPR %i", nivel_lexico);
+   geraCodigo(atrib->rot_interno, enpr);
+
    #ifdef DEPURACAO
       printf("\e[1;1H\e[2J");
       printf("\033[0;32m");
@@ -190,6 +171,96 @@ void insere_novo_proc() {
       imprime_ts(&ts);
       getchar();
    #endif
+}
+
+void finaliza_declara_proc() {
+
+   int i;
+   for(i = ts.topo; i >= 0; i--) {
+      if(ts.tabela[i].categoria == procedimento &&
+         ts.tabela[i].nivel_lexico == nivel_lexico)
+         break;
+   }
+
+   char rtpr[TAM_ID];
+   procedimento_t *atrib = ts.tabela[i].atrib_vars;
+   sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
+   geraCodigo(NULL, rtpr);
+
+   desempilha(&pil_rot, 1);
+
+   retira_ts(&ts, atrib->n_params);
+   nivel_lexico--;
+
+   #ifdef DEPURACAO
+      printf("\e[1;1H\e[2J");
+      printf("\033[0;31m");
+      printf("desalocado:\n");
+      printf("\033[0m");
+      imprime_ts(&ts);
+      getchar();
+   #endif
+}
+
+void insere_novo_param() {
+
+   simb_t novo_simb;
+   strncpy(novo_simb.id, token, TAM_ID);
+   novo_simb.categoria = param_formal;
+   novo_simb.nivel_lexico = nivel_lexico;
+   
+   novo_simb.atrib_vars = (param_formal_t *)malloc(sizeof(param_formal_t));
+   if(!novo_simb.atrib_vars)
+      imprimeErro("erro de alocacao de memoria");
+
+   param_formal_t *atrib = novo_simb.atrib_vars;
+   atrib->passagem = (pass_ref == 1 ? referencia : valor);
+
+   insere_ts(&ts, &novo_simb);
+
+   num_params++; num_params_por_tipo++;
+}
+
+void finaliza_declara_params() {
+
+   procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
+   atrib->n_params = num_params;
+   atrib->params = (param_formal_t *)malloc(atrib->n_params * sizeof(param_formal_t));
+   if(!atrib->params)
+      imprimeErro("erro de alocacao de memoria");
+
+   int i = ts.topo, j = num_params;
+   while(i >= 0 && j > 0)
+   {
+      param_formal_t *a = ts.tabela[i].atrib_vars;
+      a->deslocamento = (j - num_params) - 4;
+
+      atrib->params[j - 1].tipo = a->tipo;
+      atrib->params[j - 1].deslocamento = a->deslocamento;
+      atrib->params[j - 1].passagem = a->passagem;
+
+      i--; j--;
+   }
+
+   #ifdef DEPURACAO
+      printf("\e[1;1H\e[2J");
+      printf("\033[0;32m");
+      printf("alocado:\n");
+      printf("\033[0m");
+      imprime_ts(&ts);
+      getchar();
+   #endif
+}
+
+void atualiza_tipo_params() {
+
+   int i = ts.topo, j = num_params_por_tipo;
+   while(i >= 0 && j > 0)
+   {
+      param_formal_t *atrib = ts.tabela[i].atrib_vars;
+      atrib->tipo = tipo_corrente;
+      i--; j--;
+   }
 }
 
 void insere_nova_func() {

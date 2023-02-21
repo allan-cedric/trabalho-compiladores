@@ -38,7 +38,6 @@ programa :  { geraCodigo (NULL, "INPP"); }
             { geraCodigo (NULL, "PARA"); }
 ;
 
-// 10. regra lista de identificadores (*regra 1)
 lista_idents   :  lista_idents VIRGULA IDENT 
                   | IDENT
 ;
@@ -68,7 +67,7 @@ declara_vars   :  declara_vars declara_var
 
 declara_var :  { num_vars_por_tipo = 0; }
                lista_id_var DOIS_PONTOS tipo
-               { carrega_tipo_vars(); }
+               { atualiza_tipo_vars(); }
                PONTO_E_VIRGULA
 ;
 
@@ -90,92 +89,28 @@ declara_subrotinas   :  declara_subrotinas declara_procedimento PONTO_E_VIRGULA
                         | declara_funcao PONTO_E_VIRGULA
 ;
 
+// 12. regra declaracao de procedimento
 declara_procedimento :  PROCEDURE IDENT
-                        {
-                           insere_novo_proc();
-
-                           char enpr[TAM_ID];
-                           sprintf(enpr, "ENPR %i", ts.tabela[ts.topo].nivel_lexico);
-                           procedimento_t *atrib = ts.tabela[ts.topo].atrib_vars;
-                           geraCodigo(atrib->rot_interno, enpr);
-                        }
+                        { insere_novo_proc(); }
                         param_formais PONTO_E_VIRGULA bloco
-                        {
-                           int i;
-                           for(i = ts.topo; i >= 0; i--) {
-                              if(ts.tabela[i].categoria == procedimento &&
-                                 ts.tabela[i].nivel_lexico == nivel_lexico)
-                                 break;
-                           }
-
-                           char rtpr[TAM_ID];
-                           procedimento_t *atrib = ts.tabela[i].atrib_vars;
-                           sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
-                           geraCodigo(NULL, rtpr);
-                           desempilha(&pil_rot, 1);
-                           retira_ts(&ts, atrib->n_params);
-                           nivel_lexico--;
-
-                           #ifdef DEPURACAO
-                              printf("\e[1;1H\e[2J");
-                              printf("\033[0;31m");
-                              printf("desalocado:\n");
-                              printf("\033[0m");
-                              imprime_ts(&ts);
-                              getchar();
-                           #endif
-                        }
+                        { finaliza_declara_proc(); }
 ;
 
+// 14. regra parametros formais
 param_formais  :  { num_params = 0; }
                   ABRE_PARENTESES secao_param FECHA_PARENTESES
-                  {
-                     procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
-                     atrib->n_params = num_params;
-                     atrib->params = (param_formal_t *)malloc(atrib->n_params * sizeof(param_formal_t));
-                     if(!atrib->params)
-                        imprimeErro("erro de alocacao de memoria");
-
-                     int i = ts.topo, j = num_params;
-                     while(i >= 0 && j > 0)
-                     {
-                        param_formal_t *a = ts.tabela[i].atrib_vars;
-                        a->deslocamento = (j - num_params) - 4;
-
-                        atrib->params[j - 1].tipo = a->tipo;
-                        atrib->params[j - 1].deslocamento = a->deslocamento;
-                        atrib->params[j - 1].passagem = a->passagem;
-
-                        i--; j--;
-                     }
-
-                     #ifdef DEPURACAO
-                        printf("\e[1;1H\e[2J");
-                        printf("\033[0;32m");
-                        printf("alocado:\n");
-                        printf("\033[0m");
-                        imprime_ts(&ts);
-                        getchar();
-                     #endif
-                  }
+                  { finaliza_declara_params(); }
                   |
 ;
 
+// 15. regra secao de parametros formais
 secao_param :  secao_param PONTO_E_VIRGULA secao_param_formais
                | secao_param_formais
 ;
 
 secao_param_formais  :  { num_params_por_tipo = 0; }
                         var_opcional lista_id_param_formal DOIS_PONTOS tipo
-                        {
-                           int i = ts.topo, j = num_params_por_tipo;
-                           while(i >= 0 && j > 0)
-                           {
-                              param_formal_t *atrib = ts.tabela[i].atrib_vars;
-                              atrib->tipo = tipo_corrente;
-                              i--; j--;
-                           }
-                        }
+                        { atualiza_tipo_params(); }
 ;
 
 var_opcional   :  VAR { pass_ref = 1; }
