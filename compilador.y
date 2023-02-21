@@ -308,6 +308,10 @@ comando_condicional  :  IF expressao
                            char dsvs[TAM_ID];
                            sprintf(dsvs, "DSVS R%02i", topo_pil(&pil_rot));
                            geraCodigo(NULL, dsvs);
+                           
+                           char rot[TAM_ID];
+                           sprintf(rot, "R%02i", topo_pil(&pil_rot) - 1);
+                           geraCodigo(rot, "NADA");
                         }
                         else
                         {
@@ -319,13 +323,7 @@ comando_condicional  :  IF expressao
                         }
 ;
 
-else  :  ELSE
-         {
-            char rot[TAM_ID];
-            sprintf(rot, "R%02i", topo_pil(&pil_rot) - 1);
-            geraCodigo(rot, "NADA");
-         }
-         comando_sem_rotulo
+else  :  ELSE comando_sem_rotulo
          | %prec LOWER_THAN_ELSE
 ;
 
