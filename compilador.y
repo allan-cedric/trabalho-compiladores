@@ -172,9 +172,8 @@ atribuicao  :  expressao
 ;
 
 // 20. regra chamada de procedimento
-chamada_procedimento :  { num_expr = 0; }
-                        ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
-                        | { num_expr = 0; }
+chamada_procedimento :  ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
+                        |
 ;
 
 // 22. regra comando condicional
@@ -365,6 +364,7 @@ int main (int argc, char** argv) {
    inicializa_pil(&pil_rot);
    inicializa_pil(&pil_proc);
    inicializa_pil(&pil_expr);
+   inicializa_pil(&pil_num_params);
 
    yyin=fp;
    yyparse();

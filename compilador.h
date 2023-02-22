@@ -100,11 +100,11 @@ extern char token[TAM_TOKEN], idr[TAM_ID];
 extern int  nl, nivel_lexico,
             num_vars, num_vars_por_tipo,
             num_params, num_params_por_tipo,
-            l_elem, indice_proc, num_rot, num_expr,
+            l_elem, indice_proc, num_rot,
             pass_ref;
 extern tab_simb_t ts;
 extern tipos tipo_corrente;
-extern pilha_t pil_tipo, pil_rot, pil_proc, pil_expr;
+extern pilha_t pil_tipo, pil_rot, pil_proc, pil_expr, pil_num_params;
 
 // prototipos auxiliares para o compilador
 

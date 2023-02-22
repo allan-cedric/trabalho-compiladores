@@ -12,11 +12,11 @@ char token[TAM_TOKEN], idr[TAM_ID];
 int nl = 1, nivel_lexico,
     num_vars, num_vars_por_tipo,
     num_params, num_params_por_tipo,
-    l_elem, indice_proc, num_rot, num_expr,
+    l_elem, indice_proc, num_rot,
     pass_ref;
 tab_simb_t ts;
 tipos tipo_corrente;
-pilha_t pil_tipo, pil_rot, pil_proc, pil_expr;
+pilha_t pil_tipo, pil_rot, pil_proc, pil_expr, pil_num_params;
 
 FILE* fp=NULL;
 void geraCodigo (char* rot, char* comando) {
@@ -402,6 +402,7 @@ void inicializa_cham_proc()
       imprimeErro("categoria incompativel");
    
    empilha(&pil_proc, indice_proc);
+   empilha(&pil_num_params, 0);
 }
 
 void finaliza_cham_proc()
@@ -409,8 +410,9 @@ void finaliza_cham_proc()
    indice_proc = topo_pil(&pil_proc);
    procedimento_t *atrib = ts.tabela[indice_proc].atrib_vars;
 
-   if(num_expr != atrib->n_params)
+   if(topo_pil(&pil_num_params) != atrib->n_params)
       imprimeErro("qtd. errada de parametros");
+   desempilha(&pil_num_params, 1);
 
    char chpr[TAM_ID * 2];
    sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
@@ -496,15 +498,17 @@ void verifica_expressao()
       params = atrib->params;
    }
 
-   if(params[num_expr].passagem == referencia && 
+   int num_params = topo_pil(&pil_num_params);
+   if(params[num_params].passagem == referencia && 
       topo_pil(&pil_expr) != 0)
       imprimeErro("parametro real deve ser uma variavel simples");
 
-   if(tipo_expr != params[num_expr].tipo)
+   if(tipo_expr != params[num_params].tipo)
       imprimeErro("tipos incompativeis - lista_expressoes");
 
    desempilha(&pil_expr, 1);
-   num_expr++;
+   desempilha(&pil_num_params, 1);
+   empilha(&pil_num_params, num_params + 1); 
 }
 
 void finaliza_relacao()
@@ -556,7 +560,8 @@ void carrega_variavel()
       else {
          procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
 
-         if(atrib_proc->params[num_expr].passagem == valor)
+         int num_params = topo_pil(&pil_num_params);
+         if(atrib_proc->params[num_params].passagem == valor)
             sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
          else
             sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
@@ -575,9 +580,10 @@ void carrega_variavel()
       else {
          procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
 
-         if(atrib_proc->params[num_expr].passagem == atrib->passagem)
+         int num_params = topo_pil(&pil_num_params);
+         if(atrib_proc->params[num_params].passagem == atrib->passagem)
             sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
-         else if(atrib_proc->params[num_expr].passagem == referencia)
+         else if(atrib_proc->params[num_params].passagem == referencia)
             sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
          else
             sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
@@ -596,7 +602,6 @@ void carrega_variavel()
 
 void inicializa_cham_func()
 {
-   num_expr = 0;
    indice_proc = busca_ts(&ts, idr);
 
    if(indice_proc == -1)
@@ -606,6 +611,7 @@ void inicializa_cham_func()
       imprimeErro("categoria incompativel");
    
    empilha(&pil_proc, indice_proc);
+   empilha(&pil_num_params, 0);
 
    geraCodigo(NULL, "AMEM 1");
 }
@@ -615,8 +621,9 @@ void finaliza_cham_func()
    indice_proc = topo_pil(&pil_proc);
    funcao_t *atrib = ts.tabela[indice_proc].atrib_vars;
 
-   if(num_expr != atrib->n_params)
+   if(topo_pil(&pil_num_params) != atrib->n_params)
       imprimeErro("qtd. errada de parametros");
+   desempilha(&pil_num_params, 1);
 
    char chpr[TAM_ID * 2];
    sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
