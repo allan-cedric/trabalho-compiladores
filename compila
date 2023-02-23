@@ -1,4 +1,0 @@
-#!/usr/bin/bash
-
-./compilador $1
-pr -mtn -w 160 $1 MEPA
