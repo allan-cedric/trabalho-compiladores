@@ -3,6 +3,7 @@ MEPA
 *.output
 *.o
 lex.yy.c
+compilador
 compilador.tab.*
 .vscode/
 PgmasTomasz/

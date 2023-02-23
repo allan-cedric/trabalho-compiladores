@@ -16,7 +16,7 @@ int nl = 1, nivel_lexico,
     pass_ref;
 tab_simb_t ts;
 tipos tipo_corrente;
-pilha_t pil_tipo, pil_rot, pil_proc, pil_expr, pil_num_params;
+pilha_t pil_tipo, pil_rot, pil_proc, pil_expr, pil_num_params, pil_eh_funcao;
 
 FILE* fp=NULL;
 void geraCodigo (char* rot, char* comando) {
@@ -139,10 +139,17 @@ void alvo_desvia_subrotina() {
 
 void insere_novo_proc() {
 
+   empilha(&pil_eh_funcao, 0);
+
+   indice_proc = busca_ts(&ts, token);
+   nivel_lexico++;
+   if(indice_proc != -1)
+      return;
+
    simb_t novo_simb;
    strncpy(novo_simb.id, token,  TAM_ID);
    novo_simb.categoria = procedimento;
-   novo_simb.nivel_lexico = ++nivel_lexico;
+   novo_simb.nivel_lexico = nivel_lexico;
    
    novo_simb.atrib_vars = (procedimento_t *)malloc(sizeof(procedimento_t));
    if(!novo_simb.atrib_vars)
@@ -159,9 +166,9 @@ void insere_novo_proc() {
    empilha(&pil_rot, num_rot);
    num_rot++;
 
-   char enpr[TAM_ID];
-   sprintf(enpr, "ENPR %i", nivel_lexico);
-   geraCodigo(atrib->rot_interno, enpr);
+   // char enpr[TAM_ID];
+   // sprintf(enpr, "ENPR %i", nivel_lexico);
+   // geraCodigo(atrib->rot_interno, enpr);
 
    #ifdef DEPURACAO
       printf("\e[1;1H\e[2J");
@@ -265,10 +272,17 @@ void atualiza_tipo_params() {
 
 void insere_nova_func() {
 
+   empilha(&pil_eh_funcao, 1);
+
+   indice_proc = busca_ts(&ts, token);
+   nivel_lexico++;
+   if(indice_proc != -1)
+      return;
+
    simb_t novo_simb;
    strncpy(novo_simb.id, token, strlen(token) + 1);
    novo_simb.categoria = funcao;
-   novo_simb.nivel_lexico = ++nivel_lexico;
+   novo_simb.nivel_lexico = nivel_lexico;
    
    novo_simb.atrib_vars = (funcao_t *)malloc(sizeof(funcao_t));
    if(!novo_simb.atrib_vars)
@@ -285,9 +299,9 @@ void insere_nova_func() {
    empilha(&pil_rot, num_rot);
    num_rot++;
 
-   char enpr[TAM_ID];
-   sprintf(enpr, "ENPR %i", nivel_lexico);
-   geraCodigo(atrib->rot_interno, enpr);
+   // char enpr[TAM_ID];
+   // sprintf(enpr, "ENPR %i", nivel_lexico);
+   // geraCodigo(atrib->rot_interno, enpr);
 
    #ifdef DEPURACAO
       printf("\e[1;1H\e[2J");
@@ -353,11 +367,12 @@ void tipo_lado_esq_atrib()
       int i;
       for(i = ts.topo; i >= 0; i--) {
          if(ts.tabela[i].categoria == funcao &&
-            ts.tabela[i].nivel_lexico == nivel_lexico)
+            ts.tabela[i].nivel_lexico == nivel_lexico &&
+            !strcmp(ts.tabela[i].id, idr))
             break;
       }
 
-      if(i == -1 || strcmp(ts.tabela[i].id, idr))
+      if(i == -1)
          imprimeErro("variavel de acesso restrito");
 
       funcao_t *atrib = ts.tabela[l_elem].atrib_vars;

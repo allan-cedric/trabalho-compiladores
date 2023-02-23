@@ -21,7 +21,7 @@ pulo_linha [\n]
 
 descarte [\t ]+
 
-ident [a-zA-Z][a-zA-Z0-9]*
+ident [a-zA-Z_][a-zA-Z0-9_]*
 
 numero [0-9]+
 
@@ -44,7 +44,7 @@ comentario_linha "//".*
   return NUMERO;
 }
 
-program {
+(?i:program) {
   armz_token(simb_program, " program ");
   return PROGRAM;
 }
@@ -128,6 +128,11 @@ procedure {
 function {
   armz_token(simb_function, " function ");
   return FUNCTION;
+}
+
+forward {
+  armz_token(simb_forward, " forward ");
+  return FORWARD;
 }
 
 goto {
@@ -251,6 +256,11 @@ read {
 }
 
 write {
+  armz_token(simb_write, " write ");
+  return WRITE;
+}
+
+writeln {
   armz_token(simb_write, " write ");
   return WRITE;
 }

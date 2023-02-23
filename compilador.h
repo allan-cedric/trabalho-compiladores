@@ -22,7 +22,7 @@ typedef enum simbolos {
   simb_atribuicao, simb_abre_parenteses, simb_fecha_parenteses,
 
   simb_label, simb_type, simb_array, simb_of, simb_procedure,
-  simb_function, simb_goto, simb_if, simb_then, simb_else,
+  simb_function, simb_forward, simb_goto, simb_if, simb_then, simb_else,
   simb_while, simb_do, simb_igual, simb_diferente, simb_menor, simb_menor_igual, 
   simb_maior_igual, simb_maior, simb_mais, simb_menos, simb_vezes,
   simb_dividido, simb_not, simb_and, simb_or, simb_abre_colchetes, simb_fecha_colchetes,
@@ -104,7 +104,7 @@ extern int  nl, nivel_lexico,
             pass_ref;
 extern tab_simb_t ts;
 extern tipos tipo_corrente;
-extern pilha_t pil_tipo, pil_rot, pil_proc, pil_expr, pil_num_params;
+extern pilha_t pil_tipo, pil_rot, pil_proc, pil_expr, pil_num_params, pil_eh_funcao;
 
 // prototipos auxiliares para o compilador
 
@@ -122,6 +122,7 @@ void alvo_desvia_subrotina();
 
 void insere_novo_proc();
 void finaliza_declara_proc();
+
 void insere_novo_param();
 void finaliza_declara_params();
 void atualiza_tipo_params();
