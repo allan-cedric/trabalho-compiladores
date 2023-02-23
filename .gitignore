@@ -2,10 +2,11 @@
 MEPA
 *.output
 *.o
-compilador
 lex.yy.c
 compilador.tab.*
 .vscode/
 PgmasTomasz/
 tomasz*
 compila
+AvaliaTrabs/
+*.txt

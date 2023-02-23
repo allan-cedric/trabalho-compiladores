@@ -44,7 +44,9 @@ lista_idents   :  lista_idents VIRGULA IDENT
 
 // 2. regra bloco
 bloco :  parte_declara_vars
+         { desvia_subrotina(); }
          parte_declara_subrotinas
+         { alvo_desvia_subrotina(); }
          comando_composto { desaloca_bloco(); }
 ;
 
@@ -77,9 +79,7 @@ lista_id_var   :  lista_id_var VIRGULA IDENT { insere_nova_var(); }
 ;
 
 // 11. regra parte de declaracoes de sub-rotinas
-parte_declara_subrotinas   :  { desvia_subrotina(); }
-                              declara_subrotinas
-                              { alvo_desvia_subrotina(); }
+parte_declara_subrotinas   :  declara_subrotinas
                               |
 ;
 
@@ -178,7 +178,10 @@ chamada_procedimento :  ABRE_PARENTESES lista_expressoes FECHA_PARENTESES
 
 // 22. regra comando condicional
 comando_condicional  :  IF expressao
-                        { reserva_rotulos_ifelse(); }
+                        {
+                           op_unaria(booleano); 
+                           reserva_rotulos_ifelse(); 
+                        }
                         THEN comando_sem_rotulo 
                         { transicao_ifelse(); }
                         else
@@ -193,7 +196,10 @@ else  :  ELSE comando_sem_rotulo
 comando_repetitivo   :  WHILE
                         { reserva_rotulos_while(); }
                         expressao
-                        { desvio_falso_while(); } 
+                        {
+                           op_unaria(booleano); 
+                           desvio_falso_while(); 
+                        } 
                         DO comando_sem_rotulo
                         { finaliza_while(); }
 ;

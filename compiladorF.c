@@ -184,7 +184,7 @@ void finaliza_declara_proc() {
 
    char rtpr[TAM_ID];
    procedimento_t *atrib = ts.tabela[i].atrib_vars;
-   sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
+   sprintf(rtpr, "RTPR %i, %i", nivel_lexico, atrib->n_params);
    geraCodigo(NULL, rtpr);
 
    desempilha(&pil_rot, 1);
@@ -316,7 +316,7 @@ void finaliza_declara_func()
 
    char rtpr[TAM_ID];
    funcao_t *atrib = ts.tabela[i].atrib_vars;
-   sprintf(rtpr, "RTPR %i,%i", nivel_lexico, atrib->n_params);
+   sprintf(rtpr, "RTPR %i, %i", nivel_lexico, atrib->n_params);
    geraCodigo(NULL, rtpr);
    desempilha(&pil_rot, 1);
    retira_ts(&ts, atrib->n_params);
@@ -374,16 +374,16 @@ void armazena_lado_esq()
    char armz[TAM_ID];
    if(ts.tabela[l_elem].categoria == simples) {
       var_simples_t *atrib = ts.tabela[l_elem].atrib_vars;
-      sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+      sprintf(armz, "ARMZ %i, %i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
    }else if(ts.tabela[l_elem].categoria == param_formal) {
       param_formal_t *atrib = ts.tabela[l_elem].atrib_vars;
       if(atrib->passagem == valor)
-         sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+         sprintf(armz, "ARMZ %i, %i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
       else
-         sprintf(armz, "ARMI %i,%i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
+         sprintf(armz, "ARMI %i, %i", ts.tabela[l_elem].nivel_lexico, atrib->deslocamento);
    }else if(ts.tabela[l_elem].categoria == funcao) {
       funcao_t *atrib = ts.tabela[l_elem].atrib_vars;
-      sprintf(armz, "ARMZ %i,%i", ts.tabela[l_elem].nivel_lexico, -(atrib->n_params + 4));
+      sprintf(armz, "ARMZ %i, %i", ts.tabela[l_elem].nivel_lexico, -(atrib->n_params + 4));
    }else
       imprimeErro("categoria incompativel");
 
@@ -415,7 +415,7 @@ void finaliza_cham_proc()
    desempilha(&pil_num_params, 1);
 
    char chpr[TAM_ID * 2];
-   sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
+   sprintf(chpr, "CHPR %s, %i", atrib->rot_interno, nivel_lexico);
    geraCodigo(NULL, chpr);
 
    desempilha(&pil_proc, 1);
@@ -556,15 +556,15 @@ void carrega_variavel()
       indice_proc = topo_pil(&pil_proc);
 
       if(indice_proc == -1)
-         sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+         sprintf(crvl, "CRVL %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
       else {
          procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
 
          int num_params = topo_pil(&pil_num_params);
          if(atrib_proc->params[num_params].passagem == valor)
-            sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+            sprintf(crvl, "CRVL %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
          else
-            sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+            sprintf(crvl, "CREN %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
       }
    } else if(ts.tabela[indice].categoria == param_formal) {
       param_formal_t *atrib = ts.tabela[indice].atrib_vars;
@@ -573,25 +573,25 @@ void carrega_variavel()
 
       if(indice_proc == -1) {
          if(atrib->passagem == valor)  
-            sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+            sprintf(crvl, "CRVL %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
          else
-            sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+            sprintf(crvl, "CRVI %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
       }
       else {
          procedimento_t *atrib_proc = ts.tabela[indice_proc].atrib_vars;
 
          int num_params = topo_pil(&pil_num_params);
          if(atrib_proc->params[num_params].passagem == atrib->passagem)
-            sprintf(crvl, "CRVL %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+            sprintf(crvl, "CRVL %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
          else if(atrib_proc->params[num_params].passagem == referencia)
-            sprintf(crvl, "CREN %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+            sprintf(crvl, "CREN %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
          else
-            sprintf(crvl, "CRVI %i,%i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
+            sprintf(crvl, "CRVI %i, %i", ts.tabela[indice].nivel_lexico, atrib->deslocamento);
       }
    } else if(ts.tabela[indice].categoria == funcao) {
       funcao_t *atrib = ts.tabela[indice].atrib_vars;
       tipo = atrib->retorno;
-      sprintf(crvl, "CHPR %s,%i", atrib->rot_interno, ts.tabela[indice].nivel_lexico);
+      sprintf(crvl, "CHPR %s, %i", atrib->rot_interno, ts.tabela[indice].nivel_lexico);
       geraCodigo(NULL, "AMEM 1");
    } else
       imprimeErro("categoria incompativel");
@@ -626,7 +626,7 @@ void finaliza_cham_func()
    desempilha(&pil_num_params, 1);
 
    char chpr[TAM_ID * 2];
-   sprintf(chpr, "CHPR %s,%i", atrib->rot_interno, nivel_lexico);
+   sprintf(chpr, "CHPR %s, %i", atrib->rot_interno, nivel_lexico);
    geraCodigo(NULL, chpr);
 
    empilha(&pil_tipo, atrib->retorno);
@@ -675,7 +675,7 @@ void read_var() {
       imprimeErro("categoria incompativel");
 
    char armz[TAM_ID];
-   sprintf(armz, "ARMZ %i,%i", ts.tabela[indice].nivel_lexico, deslocamento);
+   sprintf(armz, "ARMZ %i, %i", ts.tabela[indice].nivel_lexico, deslocamento);
 
    geraCodigo(NULL, armz);
 }
